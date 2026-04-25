@@ -4,8 +4,13 @@ from ast_printer import print_ast
 
 
 code = """
-let x = 5;
-let y = 3.14;
+let let x = 2;
+let y > 3.14;
+4 ; 5;
+
+def def suma(a, b) {
+    return a + b;
+}
 
 def suma(a, b) {
     return a + b;

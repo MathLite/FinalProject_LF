@@ -7,6 +7,9 @@ class Parser:
         self.pos = 0
         self.errors = []
 
+    # =========================
+    # UTILIDADES BÁSICAS
+    # =========================
     def current(self):
         return self.tokens[self.pos]
 
@@ -36,15 +39,32 @@ class Parser:
     def consume(self, token_type, message):
         if self.check(token_type):
             return self.advance()
+
         self.error(self.current(), message)
         return None
 
     def error(self, token, message):
         error_msg = (
-            f"Error sintáctico en línea {token.line}, columna {token.column}: "
-            f"{message}. Se encontró '{token.lexeme}'"
-        )
+            "Error sintáctico en línea {}, columna {}: {}. "
+            "Se encontró '{}'"
+        ).format(token.line, token.column, message, token.lexeme)
         self.errors.append(error_msg)
+
+    def synchronize(self):
+        if not self.is_at_end():
+            self.advance()
+
+        while not self.is_at_end():
+            if self.previous().type == "SEMICOLON":
+                return
+
+            if self.current().type in (
+                "LET", "DEF", "IF", "WHILE",
+                "PRINT", "RETURN", "RBRACE"
+            ):
+                return
+
+            self.advance()
 
     # =========================
     # PUNTO DE ENTRADA
@@ -60,114 +80,176 @@ class Parser:
 
         while not self.is_at_end():
             stmt = self.parse_statement()
+
             if stmt is not None:
                 statements.append(stmt)
             else:
-                self.advance()
+                self.synchronize()
 
         return ProgramNode(statements)
 
     def parse_statement(self):
         if self.check("LET"):
             return self.parse_var_decl()
+
         if self.check("DEF"):
             return self.parse_func_decl()
+
         if self.check("IF"):
             return self.parse_if_stmt()
+
         if self.check("WHILE"):
             return self.parse_while_stmt()
+
         if self.check("PRINT"):
             return self.parse_print_stmt()
+
         if self.check("RETURN"):
             return self.parse_return_stmt()
 
         return self.parse_expr_stmt()
 
     def parse_var_decl(self):
-        self.consume("LET", "Se esperaba 'let'")
+        let_token = self.consume("LET", "Se esperaba 'let'")
         name_token = self.consume("ID", "Se esperaba un identificador")
-        self.consume("ASSIGN", "Se esperaba '='")
-        value = self.parse_expression()
-        self.consume("SEMICOLON", "Se esperaba ';'")
+        assign_token = self.consume("ASSIGN", "Se esperaba '='")
 
-        if name_token is None:
+        if let_token is None or name_token is None or assign_token is None:
             return None
+
+        value = self.parse_expression()
+        semicolon_token = self.consume("SEMICOLON", "Se esperaba ';'")
+
+        if value is None or semicolon_token is None:
+            return None
+
         return VarDeclNode(name_token.lexeme, value)
 
     def parse_func_decl(self):
-        self.consume("DEF", "Se esperaba 'def'")
+        def_token = self.consume("DEF", "Se esperaba 'def'")
         name_token = self.consume("ID", "Se esperaba el nombre de la función")
-        self.consume("LPAREN", "Se esperaba '('")
+        lparen_token = self.consume("LPAREN", "Se esperaba '('")
+
+        if def_token is None or name_token is None or lparen_token is None:
+            return None
 
         params = []
+
         if not self.check("RPAREN"):
             first_param = self.consume("ID", "Se esperaba un parámetro")
-            if first_param is not None:
-                params.append(first_param.lexeme)
+            if first_param is None:
+                return None
+            params.append(first_param.lexeme)
 
             while self.match("COMMA"):
                 param = self.consume("ID", "Se esperaba un parámetro")
-                if param is not None:
-                    params.append(param.lexeme)
+                if param is None:
+                    return None
+                params.append(param.lexeme)
 
-        self.consume("RPAREN", "Se esperaba ')'")
-        body = self.parse_block()
-
-        if name_token is None:
+        rparen_token = self.consume("RPAREN", "Se esperaba ')'")
+        if rparen_token is None:
             return None
+
+        body = self.parse_block()
+        if body is None:
+            return None
+
         return FuncDefNode(name_token.lexeme, params, body)
 
     def parse_block(self):
-        self.consume("LBRACE", "Se esperaba '{'")
+        lbrace_token = self.consume("LBRACE", "Se esperaba '{'")
+        if lbrace_token is None:
+            return None
+
         statements = []
 
         while not self.check("RBRACE") and not self.is_at_end():
             stmt = self.parse_statement()
+
             if stmt is not None:
                 statements.append(stmt)
             else:
-                self.advance()
+                self.synchronize()
 
-        self.consume("RBRACE", "Se esperaba '}'")
+        rbrace_token = self.consume("RBRACE", "Se esperaba '}'")
+        if rbrace_token is None:
+            return None
+
         return BlockNode(statements)
 
     def parse_if_stmt(self):
-        self.consume("IF", "Se esperaba 'if'")
+        if_token = self.consume("IF", "Se esperaba 'if'")
+        if if_token is None:
+            return None
+
         condition = self.parse_expression()
+        if condition is None:
+            return None
+
         then_block = self.parse_block()
+        if then_block is None:
+            return None
 
         else_block = None
         if self.match("ELSE"):
             else_block = self.parse_block()
+            if else_block is None:
+                return None
 
         return IfNode(condition, then_block, else_block)
 
     def parse_while_stmt(self):
-        self.consume("WHILE", "Se esperaba 'while'")
+        while_token = self.consume("WHILE", "Se esperaba 'while'")
+        if while_token is None:
+            return None
+
         condition = self.parse_expression()
+        if condition is None:
+            return None
+
         body = self.parse_block()
+        if body is None:
+            return None
 
         return WhileNode(condition, body)
 
     def parse_print_stmt(self):
-        self.consume("PRINT", "Se esperaba 'print'")
-        self.consume("LPAREN", "Se esperaba '('")
+        print_token = self.consume("PRINT", "Se esperaba 'print'")
+        lparen_token = self.consume("LPAREN", "Se esperaba '('")
+
+        if print_token is None or lparen_token is None:
+            return None
+
         expr = self.parse_expression()
-        self.consume("RPAREN", "Se esperaba ')'")
-        self.consume("SEMICOLON", "Se esperaba ';'")
+        rparen_token = self.consume("RPAREN", "Se esperaba ')'")
+        semicolon_token = self.consume("SEMICOLON", "Se esperaba ';'")
+
+        if expr is None or rparen_token is None or semicolon_token is None:
+            return None
 
         return PrintNode(expr)
 
     def parse_return_stmt(self):
-        self.consume("RETURN", "Se esperaba 'return'")
+        return_token = self.consume("RETURN", "Se esperaba 'return'")
+        if return_token is None:
+            return None
+
         expr = self.parse_expression()
-        self.consume("SEMICOLON", "Se esperaba ';'")
+        semicolon_token = self.consume("SEMICOLON", "Se esperaba ';'")
+
+        if expr is None or semicolon_token is None:
+            return None
 
         return ReturnNode(expr)
 
     def parse_expr_stmt(self):
         expr = self.parse_expression()
-        self.consume("SEMICOLON", "Se esperaba ';'")
+        semicolon_token = self.consume("SEMICOLON", "Se esperaba ';'")
+
+        if expr is None or semicolon_token is None:
+            return None
+
         return ExprStmtNode(expr)
 
     # =========================
@@ -179,9 +261,16 @@ class Parser:
     def parse_logical_or(self):
         expr = self.parse_logical_and()
 
+        if expr is None:
+            return None
+
         while self.match("OR"):
             operator = self.previous().lexeme
             right = self.parse_logical_and()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -189,9 +278,16 @@ class Parser:
     def parse_logical_and(self):
         expr = self.parse_equality()
 
+        if expr is None:
+            return None
+
         while self.match("AND"):
             operator = self.previous().lexeme
             right = self.parse_equality()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -199,9 +295,16 @@ class Parser:
     def parse_equality(self):
         expr = self.parse_comparison()
 
+        if expr is None:
+            return None
+
         while self.match("EQ", "NEQ"):
             operator = self.previous().lexeme
             right = self.parse_comparison()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -209,9 +312,16 @@ class Parser:
     def parse_comparison(self):
         expr = self.parse_term()
 
+        if expr is None:
+            return None
+
         while self.match("LT", "GT", "LTE", "GTE"):
             operator = self.previous().lexeme
             right = self.parse_term()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -219,9 +329,16 @@ class Parser:
     def parse_term(self):
         expr = self.parse_factor()
 
+        if expr is None:
+            return None
+
         while self.match("PLUS", "MINUS"):
             operator = self.previous().lexeme
             right = self.parse_factor()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -229,9 +346,16 @@ class Parser:
     def parse_factor(self):
         expr = self.parse_power()
 
+        if expr is None:
+            return None
+
         while self.match("MULT", "DIV", "MOD"):
             operator = self.previous().lexeme
             right = self.parse_power()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -239,9 +363,16 @@ class Parser:
     def parse_power(self):
         expr = self.parse_unary()
 
+        if expr is None:
+            return None
+
         if self.match("POW"):
             operator = self.previous().lexeme
             right = self.parse_power()
+
+            if right is None:
+                return None
+
             expr = BinOpNode(expr, operator, right)
 
         return expr
@@ -250,6 +381,10 @@ class Parser:
         if self.match("NOT", "MINUS"):
             operator = self.previous().lexeme
             operand = self.parse_unary()
+
+            if operand is None:
+                return None
+
             return UnaryOpNode(operator, operand)
 
         return self.parse_primary()
@@ -274,19 +409,32 @@ class Parser:
                 args = []
 
                 if not self.check("RPAREN"):
-                    args.append(self.parse_expression())
+                    first_arg = self.parse_expression()
+                    if first_arg is None:
+                        return None
+                    args.append(first_arg)
 
                     while self.match("COMMA"):
-                        args.append(self.parse_expression())
+                        arg = self.parse_expression()
+                        if arg is None:
+                            return None
+                        args.append(arg)
 
-                self.consume("RPAREN", "Se esperaba ')'")
+                rparen_token = self.consume("RPAREN", "Se esperaba ')'")
+                if rparen_token is None:
+                    return None
+
                 return FuncCallNode(name, args)
 
             return VariableNode(name)
 
         if self.match("LPAREN"):
             expr = self.parse_expression()
-            self.consume("RPAREN", "Se esperaba ')'")
+            rparen_token = self.consume("RPAREN", "Se esperaba ')'")
+
+            if expr is None or rparen_token is None:
+                return None
+
             return expr
 
         self.error(self.current(), "Se esperaba una expresión válida")
