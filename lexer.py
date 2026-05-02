@@ -67,17 +67,18 @@ class Lexer:
     ID_RE = re.compile(r'[A-Za-z][A-Za-z0-9_]*')
 
     def __init__(self, source: str):
-        self.source = source
-        self.position = 0
-        self.line = 1
-        self.column = 1
-        self.tokens = []   # type: List[Token]
-        self.errors = []   # type: List[LexicalError]
+        self.source = source    # Toda la entrada
+        self.position = 0       # posición actual dentro de source.
+        self.line = 1           # Número de línea actual.
+        self.column = 1         # Columna actual dentro de line.
+        self.tokens = []        # Tokens
+        self.errors = []        # listado de errores
 
     def is_at_end(self) -> bool:
         return self.position >= len(self.source)
 
-    def current_slice(self) -> str:
+    # retorna el texto restante de la linea a partir de la position.
+    def current_text(self) -> str:
         return self.source[self.position:]
 
     def advance_text(self, text: str):
@@ -100,7 +101,7 @@ class Lexer:
             self.advance_text(self.source[self.position])
 
     def match_regex(self, pattern: re.Pattern):
-        match = pattern.match(self.current_slice())
+        match = pattern.match(self.current_text())
         if match:
             return match.group(0)
         return None
@@ -114,7 +115,7 @@ class Lexer:
 
             start_line = self.line
             start_column = self.column
-            rest = self.current_slice()
+            rest = self.current_text()
 
             lexeme = self.match_regex(self.COMMENT_RE)
             if lexeme:
