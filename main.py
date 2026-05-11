@@ -9,81 +9,82 @@ from ast_printer import print_ast
 
 
 code = """
-let = 5;
-let let let = = = = 5;
-let x 5;
-let x == 5;
-let x = ;
+let = 5
+let let let = = = = 5
+let x 5
+let x == 5
+let x = 
 let x = 5
 
-print x);
-print();
-print(x;
+-- comentario
+print x)
+print()
+print(x
 print(x)
-print(x + );
+print(x + )
 
-return ;
+return 
 return x + 1 
-return a + ;
+return a + 
 
 if {
-    print(x);
+    print(x)
 }
 if x > 0
-    print(x);
+    print(x)
 if x > {
-    print(x);
+    print(x)
 }
 if x > 0 {
-    print(x);
+    print(x)
 } else
-    print(y);
+    print(y)
 else {
-    print(x);
+    print(x)
 }
 
 while {
-    print(x);
+    print(x)
 }
 while x < 10
-    print(x);
+    print(x)
 while x < {
-    print(x);
+    print(x)
 }
 
 def (a, b) {
-    return a + b;
+    return a + b
 }
 def suma a, b) {
-    return a + b;
+    return a + b
 }
 def suma(a b) {
-    return a + b;
+    return a + b
 }
 def suma(a, b {
-    return a + b;
+    return a + b
 }
 def suma(a, b)
-    return a + b;
+    return a + b
 def suma(a, b) {
     return a + b
 }
 
-print(suma(x, y);
-print(suma(x, ));
-print(suma(, x));
-print(suma(x,, y));
+print(suma(x, y)
+print(suma(x, ))
+print(suma(, x))
+print(suma(x,, y))
 
-x + ;
-+ x;
-(x + 5;
-();
-x > ;
-x and ;
-not ;
+x + 
++ x
+(x + 5
+()
+x > 
+x and 
+not 
 
 if x > 0 {
-    print(x);
+    print(x)
 }
 }
 {

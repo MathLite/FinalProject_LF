@@ -19,9 +19,9 @@ class LexicalError:
 
 
 class Lexer:
-    def __init__(self, input):
-        self.input = input    # Toda la entrada
-        self.position = 0       # es un contador de la posición actual de todo source.
+    def __init__(self, source):
+        self.source = source    # Toda la entrada
+        self.pos = 0       # es un contador de la posición actual de todo source.
         self.line = 1           # Número de línea actual.
         self.column = 1         # Columna actual dentro de line.
         self.tokens = []        # litado de Tokens guardados
