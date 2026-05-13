@@ -24,7 +24,7 @@ print(x
 print(x)
 print(x + )
 
-@print("hola mundo")
+print("hola mundo")
 
 return 
 return x + 1 
