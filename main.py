@@ -17,16 +17,25 @@ let x =
 let x = 5
 
 -- comentario
+
 print x)
 print()
 print(x
 print(x)
 print(x + )
 
+@print("hola mundo")
+
 return 
 return x + 1 
 return a + 
 
+-- \n\n\n\n\nprimera línea de comentario
+-- segunda línea de comentario
+-- tercera línea de comentario
+let x = 5
+
+print(x)
 if {
     print(x)
 }
