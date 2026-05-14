@@ -138,3 +138,92 @@ class SemanticAnalyzer:
 
         self.in_function = False       
         self.symbol_table.exit_scope() 
+    
+    def visit_FuncCallNode(self, node):
+        func_symbol = self.symbol_table.lookup(node.name)
+
+        if func_symbol is None or func_symbol.get("type") != "FUNC":
+            self.report_error(
+                "UNDECLARED_FUNC", 
+                f"La función '{node.name}' no está definida antes de ser llamada.", 
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        expected_arity = func_symbol.get("arity", 0)
+        actual_arity = len(node.args)
+
+        if expected_arity != actual_arity:
+            self.report_error(
+                "ARITY_MISMATCH", 
+                f"La función '{node.name}' espera {expected_arity} argumentos, pero recibió {actual_arity}.", 
+                node.line
+            )
+
+        for arg in node.args:
+            self.visit(arg)
+
+        node.eval_type = "ANY"
+        return "ANY"
+
+    # ==========================================
+    # LITERALES 
+    # ==========================================
+    def visit_NumberNode(self, node):
+        if '.' in str(node.value):
+            node.eval_type = "REAL"
+        else:
+            node.eval_type = "INT"
+        return node.eval_type
+
+    def visit_StringNode(self, node):
+        node.eval_type = "STRING"
+        return "STRING"
+
+    def visit_BoolNode(self, node):
+        node.eval_type = "BOOL"
+        return "BOOL"
+
+    # ==========================================
+    # OPERACIONES BINARIAS
+    # ==========================================
+    def visit_BinOpNode(self, node):
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if left_type == "ERROR" or right_type == "ERROR":
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        arithmetic_ops = ["+", "-", "*", "/", "%", "^"]
+        relational_ops = [">", "<", ">=", "<=", "==", "!="]
+        logical_ops = ["and", "or"]
+
+        if node.operator in arithmetic_ops:
+            if left_type in ["STRING", "BOOL"] or right_type in ["STRING", "BOOL"]:
+                self.report_error(
+                    "TYPE_MISMATCH", 
+                    f"Operación aritmética '{node.operator}' inválida entre tipos {left_type} y {right_type}.", 
+                    node.line
+                )
+                node.eval_type = "ERROR"
+                return "ERROR"
+
+            if left_type == "REAL" or right_type == "REAL":
+                node.eval_type = "REAL"
+            else:
+                node.eval_type = "INT"
+                
+            return node.eval_type
+
+        elif node.operator in relational_ops:
+            node.eval_type = "BOOL"
+            return "BOOL"
+
+        elif node.operator in logical_ops:
+            node.eval_type = "BOOL"
+            return "BOOL"
+
+        node.eval_type = "ANY"
+        return "ANY"
