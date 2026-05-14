@@ -41,14 +41,6 @@ class Lexer:
             "and": "AND",
             "or": "OR",
             "not": "NOT",
-            "sin": "SIN", 
-            "cos": "COS", 
-            "tan": "TAN",
-            "sqrt": "SQRT", 
-            "log": "LOG", 
-            "abs": "ABS", 
-            "floor": "FLOOR", 
-            "ceil": "CEIL"
         }
 
         # Operadores dobles

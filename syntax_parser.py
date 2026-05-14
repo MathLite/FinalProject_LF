@@ -118,11 +118,6 @@ class Parser:
 
         if self.check("RETURN"):
             return self.parse_return_stmt()
-        
-        if self.check("ID"):
-            next_token_index = self.pos + 1
-            if next_token_index < len(self.tokens) and self.tokens[next_token_index].type == "ASSIGN":
-                return self.parse_assign_stmt()
 
         return self.parse_expr_stmt()
 
@@ -297,14 +292,6 @@ class Parser:
 
         return ExprStmtNode(expr)
 
-    def parse_assign_stmt(self):
-
-        name_token = self.advance()
-        self.consume("ASSIGN", "Se esperaba '='")
-        value_expr = self.parse_expression()
-
-        return AssignNode(name_token.lexeme, value_expr)
-
     # =========================
     # EXPRESIONES
     # =========================
@@ -465,7 +452,7 @@ class Parser:
         if self.match("FALSE"):
             return BoolNode(False)
 
-        if self.match("ID", "SIN", "COS", "TAN", "SQRT", "LOG", "ABS", "FLOOR", "CEIL"):
+        if self.match("ID"):
 
             name = self.previous().lexeme
 

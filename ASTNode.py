@@ -109,8 +109,3 @@ class FuncDefNode(ASTNode):
     name: str
     params: List[str]
     body: BlockNode
-
-@dataclass
-class AssignNode(ASTNode):
-    name: str
-    value: ASTNode
