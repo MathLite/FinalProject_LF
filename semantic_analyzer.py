@@ -106,3 +106,35 @@ class SemanticAnalyzer:
 
         node.eval_type = value_type
         return value_type
+
+    def visit_FuncDefNode(self, node):
+        if self.symbol_table.current_scope_contains(node.name):
+            self.report_error(
+                "REDECLARED_FUNC", 
+                f"El nombre '{node.name}' ya fue declarado en este alcance. No puedes redeclarar esta función.", 
+                node.line
+            )
+        else:
+            self.symbol_table.define(node.name, {
+                "type": "FUNC", 
+                "arity": len(node.params)
+            })
+
+        self.symbol_table.enter_scope() 
+        self.in_function = True         
+
+        for param_name in node.params:
+            if self.symbol_table.current_scope_contains(param_name):
+                self.report_error(
+                    "REDECLARED_VAR", 
+                    f"El parámetro '{param_name}' está duplicado en la definición de la función '{node.name}'.", 
+                    node.line
+                )
+            else:
+                self.symbol_table.define(param_name, {"type": "ANY", "kind": "PARAM"})
+        
+        if node.body:
+            self.visit(node.body)
+
+        self.in_function = False       
+        self.symbol_table.exit_scope() 
