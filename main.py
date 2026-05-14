@@ -2,35 +2,11 @@ from lexer import Lexer
 from syntax_parser import Parser
 from ast_printer import print_ast
 
-code = """
--- 1. Prueba de variables, guion bajo y reasignacion (AssignNode)
-let mi_var_1 = 10
-mi_var_1 = mi_var_1 + 5
-
--- 2. Prueba de trigonometria y matematicas (Lexer y Parser)
-let resultado = sin(3.14) + sqrt(16) * 2
-
--- 3. Prueba de funciones (FuncDefNode y FuncCallNode)
-def calcular_area(base, altura) {
-    return base * altura
-}
-print(calcular_area(10, 5))
-
--- 4. Prueba de estructuras de control (IfNode y WhileNode)
-let i = 0
-while i < 3 {
-    if i == 1 {
-        print("es uno")
-    } else {
-        print("no es uno")
-    }
-    i = i + 1
-}
-
--- 5. Prueba de Panic Mode (Error sintactico intencional)
-let error_fatal = + = 5
-print("El parser sobrevivio al error")
-"""
+code = """let x = 10
+let y = 20
+if x > 5 {
+    print(x + y)
+}"""
 
 
 # 1. Análisis léxico

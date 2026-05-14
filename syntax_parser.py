@@ -82,6 +82,7 @@ class Parser:
     # PROGRAMA Y SENTENCIAS
     # =========================
     def parse_program(self):
+        line = self.current().line
         statements = []
 
         self.skip_newlines()
@@ -97,7 +98,7 @@ class Parser:
 
             self.skip_newlines()
 
-        return ProgramNode(statements)
+        return ProgramNode(statements, line=line)
 
     def parse_statement(self):
 
@@ -127,6 +128,7 @@ class Parser:
         return self.parse_expr_stmt()
 
     def parse_var_decl(self):
+        line = self.current().line        
 
         let_token = self.consume("LET", "Se esperaba 'let'")
         if let_token is None:
@@ -144,9 +146,10 @@ class Parser:
         if value is None:
             return None
 
-        return VarDeclNode(name_token.lexeme, value)
+        return VarDeclNode(name_token.lexeme, value, line=line)
 
     def parse_func_decl(self):
+        line = self.current().line
 
         def_token = self.consume("DEF", "Se esperaba 'def'")
         if def_token is None:
@@ -186,9 +189,10 @@ class Parser:
         if body is None:
             return None
 
-        return FuncDefNode(name_token.lexeme, params, body)
+        return FuncDefNode(name_token.lexeme, params, body, line=line)
 
     def parse_block(self):
+        line = self.current().line
 
         lbrace_token = self.consume("LBRACE", "Se esperaba '{'")
         if lbrace_token is None:
@@ -213,9 +217,10 @@ class Parser:
         if rbrace_token is None:
             return None
 
-        return BlockNode(statements)
+        return BlockNode(statements, line=line)
 
     def parse_if_stmt(self):
+        line = self.current().line
 
         if_token = self.consume("IF", "Se esperaba 'if'")
         if if_token is None:
@@ -238,9 +243,10 @@ class Parser:
             if else_block is None:
                 return None
 
-        return IfNode(condition, then_block, else_block)
+        return IfNode(condition, then_block, else_block, line=line)
 
     def parse_while_stmt(self):
+        line = self.current().line
 
         while_token = self.consume("WHILE", "Se esperaba 'while'")
         if while_token is None:
@@ -254,29 +260,18 @@ class Parser:
         if body is None:
             return None
 
-        return WhileNode(condition, body)
+        return WhileNode(condition, body, line=line)
 
     def parse_print_stmt(self):
-
-        print_token = self.consume("PRINT", "Se esperaba 'print'")
-        if print_token is None:
-            return None
-
-        lparen_token = self.consume("LPAREN", "Se esperaba '('")
-        if lparen_token is None:
-            return None
-
+        line = self.current().line
+        self.consume("PRINT", "Se esperaba 'print'")
+        self.consume("LPAREN", "Se esperaba '('")
         expr = self.parse_expression()
-        if expr is None:
-            return None
-
-        rparen_token = self.consume("RPAREN", "Se esperaba ')'")
-        if rparen_token is None:
-            return None
-
-        return PrintNode(expr)
+        self.consume("RPAREN", "Se esperaba ')'")
+        return PrintNode(expr, line=line)
 
     def parse_return_stmt(self):
+        line = self.current().line
 
         return_token = self.consume("RETURN", "Se esperaba 'return'")
         if return_token is None:
@@ -286,24 +281,25 @@ class Parser:
         if expr is None:
             return None
 
-        return ReturnNode(expr)
+        return ReturnNode(expr, line=line)
 
     def parse_expr_stmt(self):
+        line = self.current().line
 
         expr = self.parse_expression()
 
         if expr is None:
             return None
 
-        return ExprStmtNode(expr)
+        return ExprStmtNode(expr, line=line)
 
     def parse_assign_stmt(self):
-
+        line = self.current().line
         name_token = self.advance()
         self.consume("ASSIGN", "Se esperaba '='")
         value_expr = self.parse_expression()
 
-        return AssignNode(name_token.lexeme, value_expr)
+        return AssignNode(name_token.lexeme, value_expr, line=line)
 
     # =========================
     # EXPRESIONES
@@ -312,200 +308,188 @@ class Parser:
         return self.parse_logical_or()
 
     def parse_logical_or(self):
-
-        expr = self.parse_logical_and()
-        if expr is None:
-            return None
+        expr = self.parse_logical_and() 
 
         while self.match("OR"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous() 
+            operator = operator_token.lexeme
+            line = operator_token.line      
 
             right = self.parse_logical_and()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_logical_and(self):
-
         expr = self.parse_equality()
         if expr is None:
             return None
 
         while self.match("AND"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line
 
             right = self.parse_equality()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_equality(self):
-
         expr = self.parse_comparison()
         if expr is None:
             return None
 
         while self.match("EQ", "NEQ"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line
 
             right = self.parse_comparison()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_comparison(self):
-
         expr = self.parse_term()
         if expr is None:
             return None
 
         while self.match("LT", "GT", "LTE", "GTE"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line
 
             right = self.parse_term()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_term(self):
-
         expr = self.parse_factor()
         if expr is None:
             return None
 
         while self.match("PLUS", "MINUS"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line
 
             right = self.parse_factor()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_factor(self):
-
         expr = self.parse_power()
         if expr is None:
             return None
 
         while self.match("MULT", "DIV", "MOD"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line
 
             right = self.parse_power()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_power(self):
-
         expr = self.parse_unary()
         if expr is None:
             return None
 
         if self.match("POW"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line
 
             right = self.parse_power()
             if right is None:
                 return None
 
-            expr = BinOpNode(expr, operator, right)
+            expr = BinOpNode(expr, operator, right, line=line)
 
         return expr
 
     def parse_unary(self):
-
         if self.match("NOT", "MINUS"):
-
-            operator = self.previous().lexeme
+            operator_token = self.previous()
+            operator = operator_token.lexeme
+            line = operator_token.line 
 
             operand = self.parse_unary()
             if operand is None:
                 return None
 
-            return UnaryOpNode(operator, operand)
+            return UnaryOpNode(operator, operand, line=line)
 
         return self.parse_primary()
 
     def parse_primary(self):
-
         if self.match("INT", "REAL"):
-            return NumberNode(self.previous().lexeme)
+            return NumberNode(self.previous().lexeme, line=self.previous().line)
 
         if self.match("STRING"):
-            return StringNode(self.previous().lexeme)
+            # Agregamos line
+            return StringNode(self.previous().lexeme, line=self.previous().line)
 
         if self.match("TRUE"):
-            return BoolNode(True)
+            # Agregamos line
+            return BoolNode(True, line=self.previous().line)
 
         if self.match("FALSE"):
-            return BoolNode(False)
+            # Agregamos line
+            return BoolNode(False, line=self.previous().line)
 
         if self.match("ID", "SIN", "COS", "TAN", "SQRT", "LOG", "ABS", "FLOOR", "CEIL"):
-
+            line = self.previous().line
             name = self.previous().lexeme
 
             if self.match("LPAREN"):
-
                 args = []
-
                 if not self.check("RPAREN"):
-
                     first_arg = self.parse_expression()
-                    if first_arg is None:
-                        return None
-
+                    if first_arg is None: return None
                     args.append(first_arg)
 
                     while self.match("COMMA"):
-
                         arg = self.parse_expression()
-                        if arg is None:
-                            return None
-
+                        if arg is None: return None
                         args.append(arg)
 
                 rparen_token = self.consume("RPAREN", "Se esperaba ')'")
-                if rparen_token is None:
-                    return None
+                if rparen_token is None: return None
 
-                return FuncCallNode(name, args)
+                return FuncCallNode(name, args, line=line)
 
-            return VariableNode(name)
+            return VariableNode(name, line=line)
 
         if self.match("LPAREN"):
-
             expr = self.parse_expression()
-            if expr is None:
-                return None
+            if expr is None: return None
 
             rparen_token = self.consume("RPAREN", "Se esperaba ')'")
-            if rparen_token is None:
-                return None
+            if rparen_token is None: return None
 
             return expr
 

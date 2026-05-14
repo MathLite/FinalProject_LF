@@ -6,7 +6,8 @@ from typing import List, Optional
 # NODO BASE
 # =========================
 class ASTNode:
-    pass
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 # =========================
@@ -15,11 +16,15 @@ class ASTNode:
 @dataclass
 class ProgramNode(ASTNode):
     statements: List[ASTNode]
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 @dataclass
 class BlockNode(ASTNode):
     statements: List[ASTNode]
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 # =========================
@@ -27,22 +32,29 @@ class BlockNode(ASTNode):
 # =========================
 @dataclass
 class NumberNode(ASTNode):
-    value: str   # luego puedes convertir a int o float
+    value: str
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 @dataclass
 class StringNode(ASTNode):
     value: str
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 @dataclass
 class BoolNode(ASTNode):
     value: bool
-
+    line: int = 0
+    eval_type: Optional[str] = None
 
 @dataclass
 class VariableNode(ASTNode):
     name: str
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 # =========================
@@ -53,18 +65,23 @@ class BinOpNode(ASTNode):
     left: ASTNode
     operator: str
     right: ASTNode
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 @dataclass
 class UnaryOpNode(ASTNode):
     operator: str
     operand: ASTNode
-
+    line: int = 0
+    eval_type: Optional[str] = None
 
 @dataclass
 class FuncCallNode(ASTNode):
     name: str
     args: List[ASTNode]
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 # =========================
@@ -74,43 +91,55 @@ class FuncCallNode(ASTNode):
 class VarDeclNode(ASTNode):
     name: str
     value: ASTNode
-
+    line: int = 0
+    eval_type: Optional[str] = None
 
 @dataclass
 class PrintNode(ASTNode):
     expression: ASTNode
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 @dataclass
 class ReturnNode(ASTNode):
     expression: ASTNode
+    line: int = 0
+    eval_type: Optional[str] = None
 
 
 @dataclass
 class ExprStmtNode(ASTNode):
     expression: ASTNode
-
+    line: int = 0
+    eval_type: Optional[str] = None
 
 @dataclass
 class IfNode(ASTNode):
     condition: ASTNode
     then_block: BlockNode
-    else_block: Optional[BlockNode]
-
+    else_block: Optional[BlockNode] = None
+    line: int = 0
+    eval_type: Optional[str] = None
 
 @dataclass
 class WhileNode(ASTNode):
     condition: ASTNode
     body: BlockNode
-
-
+    line: int = 0
+    eval_type: Optional[str] = None
+    
 @dataclass
 class FuncDefNode(ASTNode):
     name: str
     params: List[str]
     body: BlockNode
+    line: int = 0
+    eval_type: Optional[str] = None
 
 @dataclass
 class AssignNode(ASTNode):
     name: str
     value: ASTNode
+    line: int = 0
+    eval_type: Optional[str] = None 

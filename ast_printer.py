@@ -22,64 +22,64 @@ def print_ast(node, indent=0):
 
     # Literales y variables
     elif isinstance(node, NumberNode):
-        print(space + "NumberNode: " + str(node.value))
+        print(space + f"NumberNode: {node.value} (L:{node.line})")  
 
     elif isinstance(node, StringNode):
-        print(space + "StringNode: " + str(node.value))
+        print(space + f"StringNode: {node.value} (L:{node.line})")
 
     elif isinstance(node, BoolNode):
-        print(space + "BoolNode: " + str(node.value))
+        print(space + f"BoolNode: {node.value} (L:{node.line})")  
 
     elif isinstance(node, VariableNode):
-        print(space + "VariableNode: " + str(node.name))
+        print(space + f"VariableNode: {node.name} (L:{node.line})")
 
     # Expresiones
     elif isinstance(node, BinOpNode):
-        print(space + "BinOpNode: " + str(node.operator))
+        print(space + f"BinOpNode: {node.operator} (L:{node.line})")
         print(space + "  left:")
         print_ast(node.left, indent + 2)
         print(space + "  right:")
         print_ast(node.right, indent + 2)
 
     elif isinstance(node, UnaryOpNode):
-        print(space + "UnaryOpNode: " + str(node.operator))
+        print(space + f"UnaryOpNode: {node.operator} (L:{node.line})")
         print(space + "  operand:")
         print_ast(node.operand, indent + 2)
 
     elif isinstance(node, FuncCallNode):
-        print(space + "FuncCallNode: " + str(node.name))
+        print(space + f"FuncCallNode: {node.name} (L:{node.line})")
         print(space + "  args:")
         for arg in node.args:
             print_ast(arg, indent + 2)
 
     # Sentencias
     elif isinstance(node, VarDeclNode):
-        print(space + "VarDeclNode: " + str(node.name))
+        print(space + f"VarDeclNode: {node.name} (L:{node.line})")
         print(space + "  value:")
         print_ast(node.value, indent + 2)
 
     elif isinstance(node, AssignNode):
-        print(space + "AssignNode: " + str(node.name))
+        print(space + f"AssignNode: {node.name} (L:{node.line})")
         print(space + "  value:")
         print_ast(node.value, indent + 2)
 
     elif isinstance(node, PrintNode):
-        print(space + "PrintNode")
+        print(space + f"PrintNode (L:{node.line})")
         print(space + "  expression:")
         print_ast(node.expression, indent + 2)
 
     elif isinstance(node, ReturnNode):
-        print(space + "ReturnNode")
+        print(space + f"ReturnNode (L:{node.line})")
         print(space + "  expression:")
         print_ast(node.expression, indent + 2)
 
     elif isinstance(node, ExprStmtNode):
-        print(space + "ExprStmtNode")
+        print(space + f"ExprStmtNode (L:{node.line})")
         print(space + "  expression:")
         print_ast(node.expression, indent + 2)
 
     elif isinstance(node, IfNode):
-        print(space + "IfNode")
+        print(space + f"IfNode (L:{node.line})")
         print(space + "  condition:")
         print_ast(node.condition, indent + 2)
         print(space + "  then_block:")
@@ -88,14 +88,14 @@ def print_ast(node, indent=0):
         print_ast(node.else_block, indent + 2)
 
     elif isinstance(node, WhileNode):
-        print(space + "WhileNode")
+        print(space + f"WhileNode (L:{node.line})")
         print(space + "  condition:")
         print_ast(node.condition, indent + 2)
         print(space + "  body:")
         print_ast(node.body, indent + 2)
 
     elif isinstance(node, FuncDefNode):
-        print(space + "FuncDefNode: " + str(node.name))
+        print(space + f"FuncDefNode: {node.name} (L:{node.line})")
         print(space + "  params: " + str(node.params))
         print(space + "  body:")
         print_ast(node.body, indent + 2)
