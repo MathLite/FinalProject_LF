@@ -227,3 +227,18 @@ class SemanticAnalyzer:
 
         node.eval_type = "ANY"
         return "ANY"
+
+    # ==========================================
+    # VALIDACIÓN DE CONTEXTO 
+    # ==========================================
+    def visit_ReturnNode(self, node):
+        if not self.in_function:
+            self.report_error(
+                "INVALID_RETURN", 
+                "La instrucción 'return' es inválida en este contexto. Solo puede usarse dentro del cuerpo de una función.", 
+                node.line
+            )
+        
+        expr_type = self.visit(node.expression)
+        node.eval_type = expr_type  
+        return expr_type
