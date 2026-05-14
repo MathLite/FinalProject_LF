@@ -60,3 +60,49 @@ class SemanticAnalyzer:
     def visit_ProgramNode(self, node):
         for stmt in node.statements:
             self.visit(stmt)
+
+    def visit_VarDeclNode(self, node):
+        value_type = self.visit(node.value)
+
+        if self.symbol_table.current_scope_contains(node.name):
+            self.report_error(
+                "REDECLARED_VAR", 
+                f"La variable '{node.name}' ya fue declarada en este bloque.", 
+                node.line
+            )
+        else:
+            self.symbol_table.define(node.name, {"type": value_type, "kind": "VAR"})
+        
+        node.eval_type = value_type
+        return value_type
+    
+    def visit_VariableNode(self, node):
+        symbol = self.symbol_table.lookup(node.name)
+
+        if symbol is None:
+            self.report_error(
+                "UNDECLARED_VAR", 
+                f"La variable '{node.name}' no ha sido declarada antes de su uso.", 
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        node.eval_type = symbol["type"]
+        return node.eval_type
+
+    def visit_AssignNode(self, node):
+        value_type = self.visit(node.value)
+        symbol = self.symbol_table.lookup(node.name)
+
+        if symbol is None:
+            self.report_error(
+                "UNDECLARED_VAR", 
+                f"No se puede asignar un valor a '{node.name}' porque no ha sido declarada.", 
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        node.eval_type = value_type
+        return value_type
