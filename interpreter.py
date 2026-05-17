@@ -1,0 +1,403 @@
+import math
+from ASTNode import *
+
+
+class RuntimeErrorInfo:
+    def __init__(self, message, line=0):
+        self.message = message
+        self.line = line
+
+    def __str__(self):
+        if self.line:
+            return "Error en tiempo de ejecución (Línea {}): {}".format(
+                self.line,
+                self.message
+            )
+
+        return "Error en tiempo de ejecución: {}".format(self.message)
+
+
+class ReturnSignal(Exception):
+    def __init__(self, value):
+        self.value = value
+
+
+class Environment:
+    def __init__(self, parent=None):
+        self.values = {}
+        self.parent = parent
+
+    def define(self, name, value):
+        self.values[name] = value
+
+    def assign(self, name, value):
+        if name in self.values:
+            self.values[name] = value
+            return
+
+        if self.parent is not None:
+            self.parent.assign(name, value)
+            return
+
+        raise RuntimeError("La variable '{}' no está definida.".format(name))
+
+    def get(self, name):
+        if name in self.values:
+            return self.values[name]
+
+        if self.parent is not None:
+            return self.parent.get(name)
+
+        raise RuntimeError("La variable '{}' no está definida.".format(name))
+
+
+class Interpreter:
+    def __init__(self):
+        self.global_env = Environment()
+        self.current_env = self.global_env
+        self.functions = {}
+        self.output = []
+        self.errors = []
+        self.max_loop_iterations = 10000
+
+        self.builtin_functions = {
+            "sin": math.sin,
+            "cos": math.cos,
+            "tan": math.tan,
+            "sqrt": math.sqrt,
+            "log": math.log,
+            "abs": abs,
+            "floor": math.floor,
+            "ceil": math.ceil,
+        }
+
+    def interpret(self, ast):
+        self.output = []
+        self.errors = []
+
+        try:
+            self.visit(ast)
+        except ReturnSignal:
+            self.errors.append(
+                RuntimeErrorInfo("La instrucción return no puede ejecutarse fuera de una función.")
+            )
+        except Exception as error:
+            self.errors.append(RuntimeErrorInfo(str(error)))
+
+        return self.output, self.errors
+
+    def visit(self, node):
+        if node is None:
+            return None
+
+        method_name = "visit_" + type(node).__name__
+        method = getattr(self, method_name, None)
+
+        if method is None:
+            raise RuntimeError(
+                "No existe método de interpretación para el nodo '{}'.".format(
+                    type(node).__name__
+                )
+            )
+
+        return method(node)
+
+    # =========================
+    # PROGRAMA Y BLOQUES
+    # =========================
+
+    def visit_ProgramNode(self, node):
+        for statement in node.statements:
+            self.visit(statement)
+
+    def visit_BlockNode(self, node):
+        for statement in node.statements:
+            self.visit(statement)
+
+    # =========================
+    # SENTENCIAS
+    # =========================
+
+    def visit_VarDeclNode(self, node):
+        value = self.visit(node.value)
+        self.current_env.define(node.name, value)
+        return value
+
+    def visit_AssignNode(self, node):
+        value = self.visit(node.value)
+        self.current_env.assign(node.name, value)
+        return value
+
+    def visit_PrintNode(self, node):
+        value = self.visit(node.expression)
+        self.output.append(self.format_value(value))
+        return value
+
+    def visit_ReturnNode(self, node):
+        value = self.visit(node.expression)
+        raise ReturnSignal(value)
+
+    def visit_ExprStmtNode(self, node):
+        return self.visit(node.expression)
+
+    def visit_IfNode(self, node):
+        condition = self.visit(node.condition)
+
+        if self.is_truthy(condition):
+            return self.visit(node.then_block)
+
+        if node.else_block is not None:
+            return self.visit(node.else_block)
+
+        return None
+
+    def visit_WhileNode(self, node):
+        iterations = 0
+
+        while self.is_truthy(self.visit(node.condition)):
+            if iterations >= self.max_loop_iterations:
+                raise RuntimeError("Se superó el límite de iteraciones. Posible ciclo infinito.")
+
+            self.visit(node.body)
+            iterations += 1
+
+        return None
+
+    def visit_FuncDefNode(self, node):
+        self.functions[node.name] = node
+        return None
+
+    # =========================
+    # LITERALES Y VARIABLES
+    # =========================
+
+    def visit_NumberNode(self, node):
+        if "." in str(node.value):
+            return float(node.value)
+
+        return int(node.value)
+
+    def visit_StringNode(self, node):
+        value = node.value
+
+        if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
+            return value[1:-1]
+
+        return value
+
+    def visit_BoolNode(self, node):
+        return node.value
+
+    def visit_VariableNode(self, node):
+        return self.current_env.get(node.name)
+
+    # =========================
+    # EXPRESIONES
+    # =========================
+
+    def visit_UnaryOpNode(self, node):
+        value = self.visit(node.operand)
+
+        if node.operator == "-":
+            self.validate_number(value, "El operador '-' requiere un valor numérico.")
+            return -value
+
+        if node.operator == "not":
+            return not self.is_truthy(value)
+
+        raise RuntimeError("Operador unario no soportado '{}'.".format(node.operator))
+
+    def visit_BinOpNode(self, node):
+        if node.operator == "and":
+            left = self.visit(node.left)
+
+            if not self.is_truthy(left):
+                return False
+
+            right = self.visit(node.right)
+            return self.is_truthy(right)
+
+        if node.operator == "or":
+            left = self.visit(node.left)
+
+            if self.is_truthy(left):
+                return True
+
+            right = self.visit(node.right)
+            return self.is_truthy(right)
+
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        if node.operator == "+":
+            return self.evaluate_plus(left, right)
+
+        if node.operator == "-":
+            self.validate_numbers(left, right, "El operador '-' requiere valores numéricos.")
+            return left - right
+
+        if node.operator == "*":
+            self.validate_numbers(left, right, "El operador '*' requiere valores numéricos.")
+            return left * right
+
+        if node.operator == "/":
+            self.validate_numbers(left, right, "El operador '/' requiere valores numéricos.")
+
+            if right == 0:
+                raise RuntimeError("División por cero.")
+
+            return left / right
+
+        if node.operator == "%":
+            self.validate_numbers(left, right, "El operador '%' requiere valores numéricos.")
+
+            if right == 0:
+                raise RuntimeError("Módulo por cero.")
+
+            return left % right
+
+        if node.operator == "^":
+            self.validate_numbers(left, right, "El operador '^' requiere valores numéricos.")
+            return left ** right
+
+        if node.operator == "==":
+            return left == right
+
+        if node.operator == "!=":
+            return left != right
+
+        if node.operator == "<":
+            self.validate_numbers(left, right, "El operador '<' requiere valores numéricos.")
+            return left < right
+
+        if node.operator == ">":
+            self.validate_numbers(left, right, "El operador '>' requiere valores numéricos.")
+            return left > right
+
+        if node.operator == "<=":
+            self.validate_numbers(left, right, "El operador '<=' requiere valores numéricos.")
+            return left <= right
+
+        if node.operator == ">=":
+            self.validate_numbers(left, right, "El operador '>=' requiere valores numéricos.")
+            return left >= right
+
+        raise RuntimeError("Operador binario no soportado '{}'.".format(node.operator))
+
+    def visit_FuncCallNode(self, node):
+        arguments = []
+
+        for arg in node.args:
+            arguments.append(self.visit(arg))
+
+        if node.name in self.builtin_functions:
+            return self.call_builtin_function(node.name, arguments)
+
+        if node.name not in self.functions:
+            raise RuntimeError("Función '{}' no encontrada.".format(node.name))
+
+        function_node = self.functions[node.name]
+
+        if len(arguments) != len(function_node.params):
+            raise RuntimeError(
+                "La función '{}' esperaba {} argumentos, pero recibió {}.".format(
+                    node.name,
+                    len(function_node.params),
+                    len(arguments)
+                )
+            )
+
+        previous_env = self.current_env
+        local_env = Environment(parent=self.global_env)
+
+        for index in range(len(function_node.params)):
+            param_name = function_node.params[index]
+            local_env.define(param_name, arguments[index])
+
+        self.current_env = local_env
+
+        try:
+            self.visit(function_node.body)
+        except ReturnSignal as return_signal:
+            self.current_env = previous_env
+            return return_signal.value
+
+        self.current_env = previous_env
+        return None
+
+    # =========================
+    # FUNCIONES INTEGRADAS
+    # =========================
+
+    def call_builtin_function(self, name, arguments):
+        if len(arguments) != 1:
+            raise RuntimeError(
+                "La función integrada '{}' espera 1 argumento.".format(name)
+            )
+
+        value = arguments[0]
+
+        if not self.is_number(value):
+            raise RuntimeError(
+                "La función integrada '{}' requiere un argumento numérico.".format(name)
+            )
+
+        try:
+            return self.builtin_functions[name](value)
+        except ValueError:
+            raise RuntimeError(
+                "Argumento inválido para la función integrada '{}'.".format(name)
+            )
+
+    # =========================
+    # UTILIDADES
+    # =========================
+
+    def is_number(self, value):
+        return isinstance(value, int) or isinstance(value, float)
+
+    def validate_number(self, value, message):
+        if not self.is_number(value):
+            raise RuntimeError(message)
+
+    def validate_numbers(self, left, right, message):
+        if not self.is_number(left) or not self.is_number(right):
+            raise RuntimeError(message)
+
+    def evaluate_plus(self, left, right):
+        if self.is_number(left) and self.is_number(right):
+            return left + right
+
+        if isinstance(left, str) and isinstance(right, str):
+            return left + right
+
+        raise RuntimeError("El operador '+' solo permite número + número o cadena + cadena.")
+
+    def is_truthy(self, value):
+        if value is None:
+            return False
+
+        if isinstance(value, bool):
+            return value
+
+        if self.is_number(value):
+            return value != 0
+
+        if isinstance(value, str):
+            return len(value) > 0
+
+        return True
+
+    def format_value(self, value):
+        if isinstance(value, bool):
+            if value:
+                return "true"
+            return "false"
+
+        if isinstance(value, float):
+            if value.is_integer():
+                return str(int(value))
+
+            return str(value)
+
+        return str(value)

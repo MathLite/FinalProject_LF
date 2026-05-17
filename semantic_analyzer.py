@@ -24,19 +24,47 @@ class SymbolTable:
     def is_global_scope(self):
         return len(self.scopes) == 1
 
+
 class SemanticError(Exception):
     pass
+
 
 class SemanticAnalyzer:
     def __init__(self):
         self.symbol_table = SymbolTable()
         self.errors = []
-        self.in_function = False 
+        self.in_function = False
+
+        self.builtin_functions = {
+            "sin": {"arity": 1, "return_type": "REAL"},
+            "cos": {"arity": 1, "return_type": "REAL"},
+            "tan": {"arity": 1, "return_type": "REAL"},
+            "sqrt": {"arity": 1, "return_type": "REAL"},
+            "log": {"arity": 1, "return_type": "REAL"},
+            "abs": {"arity": 1, "return_type": "ANY"},
+            "floor": {"arity": 1, "return_type": "INT"},
+            "ceil": {"arity": 1, "return_type": "INT"},
+        }
+
+        self.register_builtin_functions()
+
+    def register_builtin_functions(self):
+        for name, info in self.builtin_functions.items():
+            self.symbol_table.define(name, {
+                "type": "FUNC",
+                "kind": "BUILTIN_FUNC",
+                "arity": info["arity"],
+                "return_type": info["return_type"]
+            })
 
     def report_error(self, category, message, line):
-        error_msg = f"[{category}] Error Semántico (Línea {line}): {message}"
+        error_msg = "[{}] Error Semántico (Línea {}): {}".format(
+            category,
+            line,
+            message
+        )
         self.errors.append(error_msg)
-        
+
     def analyze(self, node):
         self.visit(node)
         return self.errors
@@ -45,8 +73,9 @@ class SemanticAnalyzer:
         if node is None:
             return None
 
-        method_name = f'visit_{type(node).__name__}'
+        method_name = "visit_" + type(node).__name__
         visitor = getattr(self, method_name, self.generic_visit)
+
         return visitor(node)
 
     def generic_visit(self, node):
@@ -57,39 +86,39 @@ class SemanticAnalyzer:
             elif hasattr(value, "__dict__"):
                 self.visit(value)
 
+    # =========================
+    # PROGRAMA Y BLOQUES
+    # =========================
+
     def visit_ProgramNode(self, node):
         for stmt in node.statements:
             self.visit(stmt)
+
+    def visit_BlockNode(self, node):
+        for stmt in node.statements:
+            self.visit(stmt)
+
+    # =========================
+    # DECLARACIONES
+    # =========================
 
     def visit_VarDeclNode(self, node):
         value_type = self.visit(node.value)
 
         if self.symbol_table.current_scope_contains(node.name):
             self.report_error(
-                "REDECLARED_VAR", 
-                f"La variable '{node.name}' ya fue declarada en este bloque.", 
+                "REDECLARED_VAR",
+                "La variable '{}' ya fue declarada en este bloque.".format(node.name),
                 node.line
             )
         else:
-            self.symbol_table.define(node.name, {"type": value_type, "kind": "VAR"})
-        
+            self.symbol_table.define(node.name, {
+                "type": value_type,
+                "kind": "VAR"
+            })
+
         node.eval_type = value_type
         return value_type
-    
-    def visit_VariableNode(self, node):
-        symbol = self.symbol_table.lookup(node.name)
-
-        if symbol is None:
-            self.report_error(
-                "UNDECLARED_VAR", 
-                f"La variable '{node.name}' no ha sido declarada antes de su uso.", 
-                node.line
-            )
-            node.eval_type = "ERROR"
-            return "ERROR"
-
-        node.eval_type = symbol["type"]
-        return node.eval_type
 
     def visit_AssignNode(self, node):
         value_type = self.visit(node.value)
@@ -97,8 +126,17 @@ class SemanticAnalyzer:
 
         if symbol is None:
             self.report_error(
-                "UNDECLARED_VAR", 
-                f"No se puede asignar un valor a '{node.name}' porque no ha sido declarada.", 
+                "UNDECLARED_VAR",
+                "No se puede asignar un valor a '{}' porque no ha sido declarada.".format(node.name),
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        if symbol.get("type") == "FUNC":
+            self.report_error(
+                "INVALID_ASSIGNMENT",
+                "No se puede asignar un valor al nombre de función '{}'.".format(node.name),
                 node.line
             )
             node.eval_type = "ERROR"
@@ -110,42 +148,142 @@ class SemanticAnalyzer:
     def visit_FuncDefNode(self, node):
         if self.symbol_table.current_scope_contains(node.name):
             self.report_error(
-                "REDECLARED_FUNC", 
-                f"El nombre '{node.name}' ya fue declarado en este alcance. No puedes redeclarar esta función.", 
+                "REDECLARED_FUNC",
+                "El nombre '{}' ya fue declarado en este alcance. No puedes redeclarar esta función.".format(node.name),
                 node.line
             )
         else:
             self.symbol_table.define(node.name, {
-                "type": "FUNC", 
-                "arity": len(node.params)
+                "type": "FUNC",
+                "kind": "USER_FUNC",
+                "arity": len(node.params),
+                "return_type": "ANY"
             })
 
-        self.symbol_table.enter_scope() 
-        self.in_function = True         
+        previous_in_function = self.in_function
+        self.in_function = True
+
+        self.symbol_table.enter_scope()
 
         for param_name in node.params:
             if self.symbol_table.current_scope_contains(param_name):
                 self.report_error(
-                    "REDECLARED_VAR", 
-                    f"El parámetro '{param_name}' está duplicado en la definición de la función '{node.name}'.", 
+                    "REDECLARED_VAR",
+                    "El parámetro '{}' está duplicado en la definición de la función '{}'.".format(
+                        param_name,
+                        node.name
+                    ),
                     node.line
                 )
             else:
-                self.symbol_table.define(param_name, {"type": "ANY", "kind": "PARAM"})
-        
+                self.symbol_table.define(param_name, {
+                    "type": "ANY",
+                    "kind": "PARAM"
+                })
+
         if node.body:
             self.visit(node.body)
 
-        self.in_function = False       
-        self.symbol_table.exit_scope() 
-    
+        self.symbol_table.exit_scope()
+        self.in_function = previous_in_function
+
+        node.eval_type = "FUNC"
+        return "FUNC"
+
+    # =========================
+    # SENTENCIAS
+    # =========================
+
+    def visit_PrintNode(self, node):
+        expr_type = self.visit(node.expression)
+        node.eval_type = expr_type
+        return expr_type
+
+    def visit_ReturnNode(self, node):
+        if not self.in_function:
+            self.report_error(
+                "INVALID_RETURN",
+                "La instrucción 'return' es inválida en este contexto. Solo puede usarse dentro del cuerpo de una función.",
+                node.line
+            )
+
+        expr_type = self.visit(node.expression)
+        node.eval_type = expr_type
+        return expr_type
+
+    def visit_ExprStmtNode(self, node):
+        expr_type = self.visit(node.expression)
+        node.eval_type = expr_type
+        return expr_type
+
+    def visit_IfNode(self, node):
+        condition_type = self.visit(node.condition)
+
+        if condition_type not in ["BOOL", "ERROR"]:
+            self.report_error(
+                "INVALID_CONDITION",
+                "La condición del if debe ser de tipo BOOL.",
+                node.line
+            )
+
+        self.visit(node.then_block)
+
+        if node.else_block is not None:
+            self.visit(node.else_block)
+
+        node.eval_type = "VOID"
+        return "VOID"
+
+    def visit_WhileNode(self, node):
+        condition_type = self.visit(node.condition)
+
+        if condition_type not in ["BOOL", "ERROR"]:
+            self.report_error(
+                "INVALID_CONDITION",
+                "La condición del while debe ser de tipo BOOL.",
+                node.line
+            )
+
+        self.visit(node.body)
+
+        node.eval_type = "VOID"
+        return "VOID"
+
+    # =========================
+    # VARIABLES Y FUNCIONES
+    # =========================
+
+    def visit_VariableNode(self, node):
+        symbol = self.symbol_table.lookup(node.name)
+
+        if symbol is None:
+            self.report_error(
+                "UNDECLARED_VAR",
+                "La variable '{}' no ha sido declarada antes de su uso.".format(node.name),
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        if symbol.get("type") == "FUNC":
+            self.report_error(
+                "INVALID_VAR_USAGE",
+                "El nombre '{}' corresponde a una función y no puede usarse como variable.".format(node.name),
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        node.eval_type = symbol["type"]
+        return node.eval_type
+
     def visit_FuncCallNode(self, node):
         func_symbol = self.symbol_table.lookup(node.name)
 
         if func_symbol is None or func_symbol.get("type") != "FUNC":
             self.report_error(
-                "UNDECLARED_FUNC", 
-                f"La función '{node.name}' no está definida antes de ser llamada.", 
+                "UNDECLARED_FUNC",
+                "La función '{}' no está definida antes de ser llamada.".format(node.name),
                 node.line
             )
             node.eval_type = "ERROR"
@@ -156,25 +294,57 @@ class SemanticAnalyzer:
 
         if expected_arity != actual_arity:
             self.report_error(
-                "ARITY_MISMATCH", 
-                f"La función '{node.name}' espera {expected_arity} argumentos, pero recibió {actual_arity}.", 
+                "ARITY_MISMATCH",
+                "La función '{}' espera {} argumentos, pero recibió {}.".format(
+                    node.name,
+                    expected_arity,
+                    actual_arity
+                ),
                 node.line
             )
 
+        arg_types = []
+
         for arg in node.args:
-            self.visit(arg)
+            arg_type = self.visit(arg)
+            arg_types.append(arg_type)
 
-        node.eval_type = "ANY"
-        return "ANY"
+        if func_symbol.get("kind") == "BUILTIN_FUNC":
+            for arg_type in arg_types:
+                if arg_type not in ["INT", "REAL", "ERROR"]:
+                    self.report_error(
+                        "TYPE_MISMATCH",
+                        "La función integrada '{}' requiere argumentos numéricos.".format(node.name),
+                        node.line
+                    )
+                    node.eval_type = "ERROR"
+                    return "ERROR"
 
-    # ==========================================
-    # LITERALES 
-    # ==========================================
+            return_type = func_symbol.get("return_type", "ANY")
+
+            if return_type == "ANY":
+                if len(arg_types) > 0:
+                    node.eval_type = arg_types[0]
+                else:
+                    node.eval_type = "ANY"
+            else:
+                node.eval_type = return_type
+
+            return node.eval_type
+
+        node.eval_type = func_symbol.get("return_type", "ANY")
+        return node.eval_type
+
+    # =========================
+    # LITERALES
+    # =========================
+
     def visit_NumberNode(self, node):
-        if '.' in str(node.value):
+        if "." in str(node.value):
             node.eval_type = "REAL"
         else:
             node.eval_type = "INT"
+
         return node.eval_type
 
     def visit_StringNode(self, node):
@@ -185,9 +355,10 @@ class SemanticAnalyzer:
         node.eval_type = "BOOL"
         return "BOOL"
 
-    # ==========================================
-    # OPERACIONES BINARIAS
-    # ==========================================
+    # =========================
+    # OPERACIONES
+    # =========================
+
     def visit_BinOpNode(self, node):
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
@@ -203,8 +374,12 @@ class SemanticAnalyzer:
         if node.operator in arithmetic_ops:
             if left_type in ["STRING", "BOOL"] or right_type in ["STRING", "BOOL"]:
                 self.report_error(
-                    "TYPE_MISMATCH", 
-                    f"Operación aritmética '{node.operator}' inválida entre tipos {left_type} y {right_type}.", 
+                    "TYPE_MISMATCH",
+                    "Operación aritmética '{}' inválida entre tipos {} y {}.".format(
+                        node.operator,
+                        left_type,
+                        right_type
+                    ),
                     node.line
                 )
                 node.eval_type = "ERROR"
@@ -214,31 +389,71 @@ class SemanticAnalyzer:
                 node.eval_type = "REAL"
             else:
                 node.eval_type = "INT"
-                
+
             return node.eval_type
 
-        elif node.operator in relational_ops:
+        if node.operator in relational_ops:
+            if node.operator in [">", "<", ">=", "<="]:
+                if left_type not in ["INT", "REAL"] or right_type not in ["INT", "REAL"]:
+                    self.report_error(
+                        "TYPE_MISMATCH",
+                        "El operador '{}' requiere operandos numéricos.".format(node.operator),
+                        node.line
+                    )
+                    node.eval_type = "ERROR"
+                    return "ERROR"
+
             node.eval_type = "BOOL"
             return "BOOL"
 
-        elif node.operator in logical_ops:
+        if node.operator in logical_ops:
+            if left_type != "BOOL" or right_type != "BOOL":
+                self.report_error(
+                    "TYPE_MISMATCH",
+                    "El operador lógico '{}' requiere operandos booleanos.".format(node.operator),
+                    node.line
+                )
+                node.eval_type = "ERROR"
+                return "ERROR"
+
             node.eval_type = "BOOL"
             return "BOOL"
 
         node.eval_type = "ANY"
         return "ANY"
 
-    # ==========================================
-    # VALIDACIÓN DE CONTEXTO 
-    # ==========================================
-    def visit_ReturnNode(self, node):
-        if not self.in_function:
-            self.report_error(
-                "INVALID_RETURN", 
-                "La instrucción 'return' es inválida en este contexto. Solo puede usarse dentro del cuerpo de una función.", 
-                node.line
-            )
-        
-        expr_type = self.visit(node.expression)
-        node.eval_type = expr_type  
-        return expr_type
+    def visit_UnaryOpNode(self, node):
+        operand_type = self.visit(node.operand)
+
+        if operand_type == "ERROR":
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        if node.operator == "-":
+            if operand_type not in ["INT", "REAL"]:
+                self.report_error(
+                    "TYPE_MISMATCH",
+                    "El operador '-' requiere un valor numérico.",
+                    node.line
+                )
+                node.eval_type = "ERROR"
+                return "ERROR"
+
+            node.eval_type = operand_type
+            return operand_type
+
+        if node.operator == "not":
+            if operand_type != "BOOL":
+                self.report_error(
+                    "TYPE_MISMATCH",
+                    "El operador 'not' requiere un valor booleano.",
+                    node.line
+                )
+                node.eval_type = "ERROR"
+                return "ERROR"
+
+            node.eval_type = "BOOL"
+            return "BOOL"
+
+        node.eval_type = "ERROR"
+        return "ERROR"

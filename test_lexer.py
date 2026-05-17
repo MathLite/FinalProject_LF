@@ -1,4 +1,4 @@
-from lexer2 import Lexer
+from lexer import Lexer
 
 
 def test_lexer(code: str) -> None:

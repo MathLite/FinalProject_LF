@@ -2,8 +2,11 @@ from lexer import Lexer
 from syntax_parser import Parser
 from ast_printer import print_ast
 from semantic_analyzer import SemanticAnalyzer
+from interpreter import Interpreter
 
-code = """
+
+#code = 
+"""
 -- 1. Engaño de Scopes (Shadowing y colisión con parámetros)
 let variable_global = 100
 def calcular(variable_global, descuento) {
@@ -43,7 +46,50 @@ while i < 3 {
 """
 
 
-# 1. Análisis léxico
+
+
+code = """
+-- Prueba completa de la Fase 5: Intérprete
+
+let x = 5
+let y = 2
+let z = x + y * 3
+print(z)
+
+print(2 ^ 3 ^ 2)
+
+if z > 10 and true {
+    print("z es mayor que 10")
+} else {
+    print("z no es mayor que 10")
+}
+
+let i = 1
+while i <= 3 {
+    print(i)
+    i = i + 1
+}
+
+def suma(a, b) {
+    return a + b
+}
+
+print(suma(10, 20))
+
+def cuadrado(n) {
+    return n * n
+}
+
+print(cuadrado(6))
+
+print(sqrt(25))
+print(abs(-8))
+print(floor(3.9))
+print(ceil(3.1))
+print(sin(0))
+"""
+
+
 lexer = Lexer(code)
 tokens, lexical_errors = lexer.tokenize()
 
@@ -54,40 +100,72 @@ for token in tokens:
 
 print("\nERRORES LÉXICOS")
 print("-" * 60)
+
 if not lexical_errors:
     print("Sin errores léxicos.")
 else:
     for error in lexical_errors:
         print(f"{error.message}: {error.lexeme!r} en línea {error.line}, columna {error.column}")
 
-
-# 2. Solo parsear si no hay errores léxicos
-if not lexical_errors:
+if lexical_errors:
+    print("\nNo se ejecuta el análisis sintáctico porque existen errores léxicos.")
+else:
     parser = Parser(tokens)
     ast = parser.parse()
 
     print("\nERRORES SINTÁCTICOS")
     print("-" * 60)
+
     if not parser.errors:
         print("Sin errores sintácticos.")
     else:
         for error in parser.errors:
             print(error)
 
-    print("\nAST")
-    print("-" * 60)
-    print_ast(ast)
+    if parser.errors:
+        print("\nNo se ejecuta el análisis semántico porque existen errores sintácticos.")
+    else:
+        print("\nAST")
+        print("-" * 60)
+        print_ast(ast)
 
-    if not parser.errors:
         print("\nINICIANDO ANÁLISIS SEMÁNTICO...")
         print("-" * 60)
-        
+
         analyzer = SemanticAnalyzer()
-        semantic_errors = analyzer.analyze(ast) 
-        
+        semantic_errors = analyzer.analyze(ast)
+
         if semantic_errors:
             print("¡SE ENCONTRARON ERRORES SEMÁNTICOS!\n")
+
             for err in semantic_errors:
                 print(err)
+
+            print("\nNo se ejecuta el intérprete porque existen errores semánticos.")
+
         else:
-            print("Análisis Semántico exitoso. El código es 100% válido.")
+            print("Análisis Semántico exitoso. El código es válido.")
+
+            print("\nINICIANDO INTERPRETACIÓN...")
+            print("-" * 60)
+
+            interpreter = Interpreter()
+            output, runtime_errors = interpreter.interpret(ast)
+
+            print("\nERRORES EN TIEMPO DE EJECUCIÓN")
+            print("-" * 60)
+
+            if runtime_errors:
+                for error in runtime_errors:
+                    print(error)
+            else:
+                print("Sin errores en tiempo de ejecución.")
+
+            print("\nSALIDA DEL PROGRAMA")
+            print("-" * 60)
+
+            if output:
+                for line in output:
+                    print(line)
+            else:
+                print("El programa no generó salida.")
