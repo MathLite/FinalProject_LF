@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Intérprete MathLite</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        main {
+            width: 90%;
+            margin: 25px auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 330px;
+            font-family: Consolas, monospace;
+            font-size: 15px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 25px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #111827;
+            font-size: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+
+        pre {
+            background: #111827;
+            color: #e5e7eb;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .success {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background: #f3f4f6;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Intérprete MathLite</h1>
+        <p>Lexer · Parser · AST · Análisis Semántico · Intérprete</p>
+    </header>
+
+    <main>
+        <form method="POST">
+            <label for="code"><strong>Código fuente:</strong></label>
+            <textarea name="code" id="code">{{ code }}</textarea>
+            <button type="submit">Ejecutar</button>
+        </form>
+
+        {% if result %}
+            <div class="card">
+                <h2>Estado de ejecución</h2>
+
+                {% if result.success %}
+                    <p class="success">Ejecución exitosa.</p>
+                {% else %}
+                    <p class="error">El análisis se detuvo en la fase: {{ result.phase }}</p>
+                {% endif %}
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h2>Salida del programa</h2>
+
+                    {% if result.output %}
+                        <pre>{% for line in result.output %}{{ line }}
+{% endfor %}</pre>
+                    {% else %}
+                        <p>El programa no generó salida.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Errores léxicos</h2>
+
+                    {% if result.lexical_errors %}
+                        <pre>{% for error in result.lexical_errors %}{{ error.message }}: '{{ error.lexeme }}' en línea {{ error.line }}, columna {{ error.column }}
+{% endfor %}</pre>
+                    {% else %}
+                        <p>Sin errores léxicos.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Errores sintácticos</h2>
+
+                    {% if result.syntax_errors %}
+                        <pre>{% for error in result.syntax_errors %}{{ error }}
+{% endfor %}</pre>
+                    {% else %}
+                        <p>Sin errores sintácticos.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Errores semánticos</h2>
+
+                    {% if result.semantic_errors %}
+                        <pre>{% for error in result.semantic_errors %}{{ error }}
+{% endfor %}</pre>
+                    {% else %}
+                        <p>Sin errores semánticos.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Errores en tiempo de ejecución</h2>
+
+                    {% if result.runtime_errors %}
+                        <pre>{% for error in result.runtime_errors %}{{ error }}
+{% endfor %}</pre>
+                    {% else %}
+                        <p>Sin errores en tiempo de ejecución.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>AST</h2>
+
+                    {% if result.ast %}
+                        <pre>{{ result.ast }}</pre>
+                    {% else %}
+                        <p>No se generó AST.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 18px;">
+                <h2>Tokens</h2>
+
+                {% if result.tokens %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Lexema</th>
+                                <th>Línea</th>
+                                <th>Columna</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for token in result.tokens %}
+                                <tr>
+                                    <td>{{ token.type }}</td>
+                                    <td>{{ token.lexeme }}</td>
+                                    <td>{{ token.line }}</td>
+                                    <td>{{ token.column }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No se generaron tokens.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>

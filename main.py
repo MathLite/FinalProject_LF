@@ -48,7 +48,8 @@ while i < 3 {
 
 
 
-code = """
+#code = 
+"""
 -- Prueba completa de la Fase 5: Intérprete
 
 let x = 5
@@ -89,6 +90,9 @@ print(ceil(3.1))
 print(sin(0))
 """
 
+code = """
+print(log(0))
+"""
 
 lexer = Lexer(code)
 tokens, lexical_errors = lexer.tokenize()
