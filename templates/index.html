@@ -19,6 +19,15 @@
             text-align: center;
         }
 
+        header h1 {
+            margin: 0;
+        }
+
+        header p {
+            margin-top: 8px;
+            margin-bottom: 0;
+        }
+
         main {
             width: 90%;
             margin: 25px auto;
@@ -64,6 +73,7 @@
             border-radius: 8px;
             border: 1px solid #ddd;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            margin-bottom: 18px;
         }
 
         .card h2 {
@@ -81,6 +91,8 @@
             border-radius: 6px;
             overflow-x: auto;
             white-space: pre-wrap;
+            font-family: Consolas, monospace;
+            font-size: 14px;
         }
 
         .success {
@@ -93,6 +105,11 @@
             font-weight: bold;
         }
 
+        .info {
+            color: #1d4ed8;
+            font-weight: bold;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -101,12 +118,24 @@
 
         th, td {
             border: 1px solid #ddd;
-            padding: 6px;
+            padding: 7px;
             text-align: left;
+            vertical-align: top;
         }
 
         th {
             background: #f3f4f6;
+        }
+
+        .small-text {
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 10px;
+            color: #111827;
         }
 
         @media (max-width: 900px) {
@@ -120,15 +149,19 @@
 <body>
     <header>
         <h1>Intérprete MathLite</h1>
-        <p>Lexer · Parser · AST · Análisis Semántico · Intérprete</p>
+        <p>Lexer · Parser · AST · Análisis Semántico · Intérprete · Firebase</p>
     </header>
 
     <main>
-        <form method="POST">
-            <label for="code"><strong>Código fuente:</strong></label>
-            <textarea name="code" id="code">{{ code }}</textarea>
-            <button type="submit">Ejecutar</button>
-        </form>
+        <div class="card">
+            <h2>Editor de código</h2>
+
+            <form method="POST">
+                <label for="code"><strong>Código fuente:</strong></label>
+                <textarea name="code" id="code">{{ code }}</textarea>
+                <button type="submit">Ejecutar</button>
+            </form>
+        </div>
 
         {% if result %}
             <div class="card">
@@ -139,7 +172,17 @@
                 {% else %}
                     <p class="error">El análisis se detuvo en la fase: {{ result.phase }}</p>
                 {% endif %}
+
+                <p><strong>Fase final:</strong> {{ result.phase }}</p>
             </div>
+
+            {% if saved_id %}
+                <div class="card">
+                    <h2>Registro en Firebase</h2>
+                    <p class="info">Caso de prueba guardado correctamente.</p>
+                    <p><strong>ID del documento:</strong> {{ saved_id }}</p>
+                </div>
+            {% endif %}
 
             <div class="grid">
                 <div class="card">
@@ -198,7 +241,7 @@
                 </div>
 
                 <div class="card">
-                    <h2>AST</h2>
+                    <h2>AST generado</h2>
 
                     {% if result.ast %}
                         <pre>{{ result.ast }}</pre>
@@ -208,8 +251,8 @@
                 </div>
             </div>
 
-            <div class="card" style="margin-top: 18px;">
-                <h2>Tokens</h2>
+            <div class="card">
+                <h2>Tokens generados</h2>
 
                 {% if result.tokens %}
                     <table>
@@ -237,6 +280,66 @@
                 {% endif %}
             </div>
         {% endif %}
+
+        <div class="card">
+            <h2>Últimos casos guardados en Firebase</h2>
+
+            {% if test_cases %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fase</th>
+                            <th>Éxito</th>
+                            <th>Salida</th>
+                            <th>Errores</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for case in test_cases %}
+                            <tr>
+                                <td class="small-text">{{ case.id }}</td>
+                                <td>{{ case.phase }}</td>
+                                <td>{{ case.success }}</td>
+                                <td>
+                                    {% if case.output %}
+                                        {% for line in case.output %}
+                                            {{ line }}<br>
+                                        {% endfor %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if case.lexical_errors %}
+                                        Léxicos: {{ case.lexical_errors|length }}<br>
+                                    {% endif %}
+
+                                    {% if case.syntax_errors %}
+                                        Sintácticos: {{ case.syntax_errors|length }}<br>
+                                    {% endif %}
+
+                                    {% if case.semantic_errors %}
+                                        Semánticos: {{ case.semantic_errors|length }}<br>
+                                    {% endif %}
+
+                                    {% if case.runtime_errors %}
+                                        Runtime: {{ case.runtime_errors|length }}<br>
+                                    {% endif %}
+
+                                    {% if not case.lexical_errors and not case.syntax_errors and not case.semantic_errors and not case.runtime_errors %}
+                                        Sin errores
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No hay casos guardados todavía.</p>
+            {% endif %}
+        </div>
     </main>
 </body>
 </html>
+```
