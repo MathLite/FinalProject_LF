@@ -91,7 +91,8 @@ print(sin(0))
 """
 
 code = """
-print(log(0))
+let x = --5;
+print(x)
 """
 
 lexer = Lexer(code)

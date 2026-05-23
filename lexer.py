@@ -111,6 +111,8 @@ class Lexer:
         while not self.finished() and self.input[self.position] in " \t\r":
             self.move(self.input[self.position])
 
+
+    ##(ENTENDER ESTA FUNCION ES IMPORTANTE PARA COMO FUNCIONA EL LEXER)
     def regex_match(self, pattern):
         match = pattern.match(self.current_text())
 

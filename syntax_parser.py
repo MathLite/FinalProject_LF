@@ -7,35 +7,43 @@ class Parser:
         self.pos = 0
         self.errors = []
 
-    # =========================
-    # UTILIDADES BÁSICAS
-    # =========================
-    def current(self):
-        return self.tokens[self.pos]
+#### FUNCIONES CLAVES DE RECORRIDO Y RESPUESTA DEL PARSER 
 
+# Retorna el token actual.
+    def current(self):  
+        return self.tokens[self.pos]
+    
+# Retorna el token anterior.
     def previous(self):
         return self.tokens[self.pos - 1]
-
+    
+# Valida si se llego al final del programa y returna el token EOF.
     def is_at_end(self):
         return self.current().type == "EOF"
-
+    
+# Avanza al siguiente token.
     def advance(self):
         if not self.is_at_end():
             self.pos += 1
         return self.previous()
-
+    
+# El token actual es de cierto tipo? -> true / false
     def check(self, token_type):
         if self.is_at_end():
             return False
         return self.current().type == token_type
-
+    
+#El token actual coincide con alguno del listado de tipos -> true / false
     def match(self, *token_types):
         for token_type in token_types:
             if self.check(token_type):
                 self.advance()
                 return True
         return False
-
+    
+# Exige que el token actual sea igual al especificado en token_type y lo consume 
+# (continua el analisis). Si no es el caso, retorna una respuesta con el mensaje
+# de error de la regla/funcion establecida.
     def consume(self, token_type, message):
         if self.check(token_type):
             return self.advance()
@@ -51,6 +59,10 @@ class Parser:
 
         self.errors.append(error_msg)
 
+# Cuando se detecta un error, el analisis debe continuar para ello este metodo 
+# permite avanzar tokens hasta encontrar un "punto apropiado" para continuar 
+# (nueva sentencia, fin de un bloque, o un /n). es usado en parse_program al retornar none en 
+# la respuesta de la regla de statement (parse_statement).
     def synchronize(self):
         if not self.is_at_end():
             self.advance()
@@ -72,15 +84,15 @@ class Parser:
         while self.match("NEWLINE"):
             pass
 
-    # =========================
-    # PUNTO DE ENTRADA
-    # =========================
+# Inicio del parser
     def parse(self):
         return self.parse_program()
 
-    # =========================
-    # PROGRAMA Y SENTENCIAS
-    # =========================
+
+
+#------------
+#### FUNCIONES DE LA GRAMATICA LL(1)
+
     def parse_program(self):
         line = self.current().line
         statements = []
