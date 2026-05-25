@@ -95,8 +95,12 @@ class SemanticAnalyzer:
             self.visit(stmt)
 
     def visit_BlockNode(self, node):
+        self.symbol_table.enter_scope()
+
         for stmt in node.statements:
             self.visit(stmt)
+
+        self.symbol_table.exit_scope()
 
     # =========================
     # DECLARACIONES
@@ -116,31 +120,6 @@ class SemanticAnalyzer:
                 "type": value_type,
                 "kind": "VAR"
             })
-
-        node.eval_type = value_type
-        return value_type
-
-    def visit_AssignNode(self, node):
-        value_type = self.visit(node.value)
-        symbol = self.symbol_table.lookup(node.name)
-
-        if symbol is None:
-            self.report_error(
-                "UNDECLARED_VAR",
-                "No se puede asignar un valor a '{}' porque no ha sido declarada.".format(node.name),
-                node.line
-            )
-            node.eval_type = "ERROR"
-            return "ERROR"
-
-        if symbol.get("type") == "FUNC":
-            self.report_error(
-                "INVALID_ASSIGNMENT",
-                "No se puede asignar un valor al nombre de función '{}'.".format(node.name),
-                node.line
-            )
-            node.eval_type = "ERROR"
-            return "ERROR"
 
         node.eval_type = value_type
         return value_type

@@ -113,7 +113,6 @@ class Parser:
         return ProgramNode(statements, line=line)
 
     def parse_statement(self):
-
         if self.check("LET"):
             return self.parse_var_decl()
 
@@ -131,11 +130,6 @@ class Parser:
 
         if self.check("RETURN"):
             return self.parse_return_stmt()
-        
-        if self.check("ID"):
-            next_token_index = self.pos + 1
-            if next_token_index < len(self.tokens) and self.tokens[next_token_index].type == "ASSIGN":
-                return self.parse_assign_stmt()
 
         return self.parse_expr_stmt()
 
@@ -248,7 +242,10 @@ class Parser:
 
         else_block = None
 
+        self.skip_newlines()
+
         if self.match("ELSE"):
+            self.skip_newlines()
 
             else_block = self.parse_block()
 
@@ -304,14 +301,6 @@ class Parser:
             return None
 
         return ExprStmtNode(expr, line=line)
-
-    def parse_assign_stmt(self):
-        line = self.current().line
-        name_token = self.advance()
-        self.consume("ASSIGN", "Se esperaba '='")
-        value_expr = self.parse_expression()
-
-        return AssignNode(name_token.lexeme, value_expr, line=line)
 
     # =========================
     # EXPRESIONES

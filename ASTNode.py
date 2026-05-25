@@ -136,10 +136,3 @@ class FuncDefNode(ASTNode):
     body: BlockNode
     line: int = 0
     eval_type: Optional[str] = None
-
-@dataclass
-class AssignNode(ASTNode):
-    name: str
-    value: ASTNode
-    line: int = 0
-    eval_type: Optional[str] = None 

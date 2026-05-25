@@ -58,11 +58,6 @@ def print_ast(node, indent=0):
         print(space + "  value:")
         print_ast(node.value, indent + 2)
 
-    elif isinstance(node, AssignNode):
-        print(space + f"AssignNode: {node.name} (L:{node.line})")
-        print(space + "  value:")
-        print_ast(node.value, indent + 2)
-
     elif isinstance(node, PrintNode):
         print(space + f"PrintNode (L:{node.line})")
         print(space + "  expression:")

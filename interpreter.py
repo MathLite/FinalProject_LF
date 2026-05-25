@@ -122,12 +122,7 @@ class Interpreter:
         value = self.visit(node.value)
         self.current_env.define(node.name, value)
         return value
-
-    def visit_AssignNode(self, node):
-        value = self.visit(node.value)
-        self.current_env.assign(node.name, value)
-        return value
-
+    
     def visit_PrintNode(self, node):
         value = self.visit(node.expression)
         self.output.append(self.format_value(value))
@@ -144,22 +139,53 @@ class Interpreter:
         condition = self.visit(node.condition)
 
         if self.is_truthy(condition):
-            return self.visit(node.then_block)
+            previous_env = self.current_env
+            block_env = Environment(parent=previous_env)
+
+            self.current_env = block_env
+
+            try:
+                for statement in node.then_block.statements:
+                    self.visit(statement)
+            finally:
+                self.current_env = previous_env
+
+            return None
 
         if node.else_block is not None:
-            return self.visit(node.else_block)
+            previous_env = self.current_env
+            block_env = Environment(parent=previous_env)
+
+            self.current_env = block_env
+
+            try:
+                for statement in node.else_block.statements:
+                    self.visit(statement)
+            finally:
+                self.current_env = previous_env
 
         return None
 
     def visit_WhileNode(self, node):
         iterations = 0
 
-        while self.is_truthy(self.visit(node.condition)):
-            if iterations >= self.max_loop_iterations:
-                raise RuntimeError("Se superó el límite de iteraciones. Posible ciclo infinito.")
+        previous_env = self.current_env
+        while_env = Environment(parent=previous_env)
 
-            self.visit(node.body)
-            iterations += 1
+        self.current_env = while_env
+
+        try:
+            while self.is_truthy(self.visit(node.condition)):
+                if iterations >= self.max_loop_iterations:
+                    raise RuntimeError("Se superó el límite de iteraciones. Posible ciclo infinito.")
+
+                for statement in node.body.statements:
+                    self.visit(statement)
+
+                iterations += 1
+
+        finally:
+            self.current_env = previous_env
 
         return None
 
