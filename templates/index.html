@@ -2,97 +2,110 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Intérprete MathLite</title>
+    <title>MathLite Interpreter</title>
+
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
             margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            color: #111827;
         }
 
         header {
-            background: #1f2937;
+            background: #111827;
             color: white;
-            padding: 20px;
-            text-align: center;
+            padding: 14px 24px;
+            border-bottom: 1px solid #374151;
         }
 
         header h1 {
             margin: 0;
+            font-size: 22px;
         }
 
         header p {
-            margin-top: 8px;
-            margin-bottom: 0;
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            color: #d1d5db;
         }
 
-        main {
-            width: 90%;
-            margin: 25px auto;
+        .layout {
+            display: grid;
+            grid-template-columns: 50% 50%;
+            height: calc(100vh - 72px);
+        }
+
+        .editor-panel {
+            padding: 18px;
+            border-right: 1px solid #d1d5db;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .result-panel {
+            padding: 18px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         textarea {
             width: 100%;
-            height: 330px;
+            flex: 1;
+            resize: none;
             font-family: Consolas, monospace;
             font-size: 15px;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            resize: vertical;
-            box-sizing: border-box;
+            line-height: 1.45;
+            padding: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #0f172a;
+            color: #e5e7eb;
+            outline: none;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
         }
 
         button {
-            margin-top: 15px;
-            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: bold;
             background: #2563eb;
             color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
+        }
+
+        button.secondary {
+            background: #e5e7eb;
+            color: #111827;
         }
 
         button:hover {
-            background: #1d4ed8;
+            opacity: 0.9;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-            margin-top: 25px;
-        }
-
-        .card {
-            background: white;
-            padding: 18px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            margin-bottom: 18px;
-        }
-
-        .card h2 {
-            margin-top: 0;
-            color: #111827;
-            font-size: 20px;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 8px;
-        }
-
-        pre {
-            background: #111827;
-            color: #e5e7eb;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            font-family: Consolas, monospace;
+        .status {
             font-size: 14px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
         }
 
         .success {
@@ -105,41 +118,122 @@
             font-weight: bold;
         }
 
-        .info {
-            color: #1d4ed8;
-            font-weight: bold;
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: #e5e7eb;
+            color: #111827;
+            padding: 9px 12px;
+            font-size: 14px;
+        }
+
+        .tab-button.active {
+            background: #111827;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 14px;
+            overflow: auto;
+            flex: 1;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-two {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .box {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f9fafb;
+            margin-bottom: 12px;
+        }
+
+        .box h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+
+        pre {
+            background: #111827;
+            color: #e5e7eb;
+            padding: 12px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            font-family: Consolas, monospace;
+            font-size: 13px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         th, td {
-            border: 1px solid #ddd;
-            padding: 7px;
+            border: 1px solid #e5e7eb;
+            padding: 6px;
             text-align: left;
-            vertical-align: top;
         }
 
         th {
             background: #f3f4f6;
         }
 
-        .small-text {
-            font-size: 13px;
-            color: #374151;
+        .ast-switch {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
-        .section-title {
-            margin-top: 30px;
-            margin-bottom: 10px;
-            color: #111827;
+        .ast-view {
+            display: none;
         }
 
-        @media (max-width: 900px) {
-            .grid {
+        .ast-view.active {
+            display: block;
+        }
+
+        #astGraph {
+            height: 520px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        @media (max-width: 950px) {
+            .layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .editor-panel {
+                height: 55vh;
+                border-right: none;
+                border-bottom: 1px solid #d1d5db;
+            }
+
+            .result-panel {
+                height: 70vh;
+            }
+
+            .grid-two {
                 grid-template-columns: 1fr;
             }
         }
@@ -148,113 +242,123 @@
 
 <body>
     <header>
-        <h1>Intérprete MathLite</h1>
-        <p>Lexer · Parser · AST · Análisis Semántico · Intérprete · Firebase</p>
+        <h1>MathLite Interpreter</h1>
+        <p>Lexer · Parser · AST · Semantic Analyzer · Interpreter · Firebase</p>
     </header>
 
-    <main>
-        <div class="card">
-            <h2>Editor de código</h2>
+    <main class="layout">
+        <section class="editor-panel">
+            <form method="POST" style="display:flex; flex-direction:column; flex:1; gap:12px;">
+                <label for="code"><strong>Editor de código</strong></label>
 
-            <form method="POST">
-                <label for="code"><strong>Código fuente:</strong></label>
                 <textarea name="code" id="code">{{ code }}</textarea>
-                <button type="submit">Ejecutar</button>
+
+                <div class="actions">
+                    <button type="submit">Ejecutar</button>
+
+                    {% if result %}
+                        <div class="status">
+                            Fase final:
+                            <strong>{{ result.phase }}</strong>
+                            |
+                            {% if result.success %}
+                                <span class="success">Correcto</span>
+                            {% else %}
+                                <span class="error">Con errores</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
             </form>
-        </div>
+        </section>
 
-        {% if result %}
-            <div class="card">
-                <h2>Estado de ejecución</h2>
+        <section class="result-panel">
+            <div class="tabs">
+                <button class="tab-button active" type="button" onclick="openTab('tab-output', this)">Salida y errores</button>
+                <button class="tab-button" type="button" onclick="openTab('tab-tokens', this)">Tokens</button>
+                <button class="tab-button" type="button" onclick="openTab('tab-ast', this)">AST</button>
+                <button class="tab-button" type="button" onclick="openTab('tab-history', this)">Firebase</button>
+            </div>
 
-                {% if result.success %}
-                    <p class="success">Ejecución exitosa.</p>
+            <div id="tab-output" class="tab-content active">
+                {% if result %}
+                    <div class="grid-two">
+                        <div class="box">
+                            <h3>Salida del programa</h3>
+
+                            {% if result.output %}
+                                <pre>{% for line in result.output %}{{ line }}
+{% endfor %}</pre>
+                            {% else %}
+                                <p>El programa no generó salida.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="box">
+                            <h3>Estado</h3>
+
+                            {% if result.success %}
+                                <p class="success">Ejecución exitosa.</p>
+                            {% else %}
+                                <p class="error">El proceso se detuvo en la fase: {{ result.phase }}</p>
+                            {% endif %}
+
+                            {% if saved_id %}
+                                <p><strong>Firebase ID:</strong> {{ saved_id }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="box">
+                        <h3>Errores léxicos</h3>
+
+                        {% if result.lexical_errors %}
+                            <pre>{% for error in result.lexical_errors %}{{ error.message }}: '{{ error.lexeme }}' en línea {{ error.line }}, columna {{ error.column }}
+{% endfor %}</pre>
+                        {% else %}
+                            <p>Sin errores léxicos.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="box">
+                        <h3>Errores sintácticos</h3>
+
+                        {% if result.syntax_errors %}
+                            <pre>{% for error in result.syntax_errors %}{{ error }}
+{% endfor %}</pre>
+                        {% else %}
+                            <p>Sin errores sintácticos.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="box">
+                        <h3>Errores semánticos</h3>
+
+                        {% if result.semantic_errors %}
+                            <pre>{% for error in result.semantic_errors %}{{ error }}
+{% endfor %}</pre>
+                        {% else %}
+                            <p>Sin errores semánticos.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="box">
+                        <h3>Errores en tiempo de ejecución</h3>
+
+                        {% if result.runtime_errors %}
+                            <pre>{% for error in result.runtime_errors %}{{ error }}
+{% endfor %}</pre>
+                        {% else %}
+                            <p>Sin errores en tiempo de ejecución.</p>
+                        {% endif %}
+                    </div>
                 {% else %}
-                    <p class="error">El análisis se detuvo en la fase: {{ result.phase }}</p>
+                    <p>Ejecuta un programa para ver los resultados.</p>
                 {% endif %}
-
-                <p><strong>Fase final:</strong> {{ result.phase }}</p>
             </div>
 
-            {% if saved_id %}
-                <div class="card">
-                    <h2>Registro en Firebase</h2>
-                    <p class="info">Caso de prueba guardado correctamente.</p>
-                    <p><strong>ID del documento:</strong> {{ saved_id }}</p>
-                </div>
-            {% endif %}
-
-            <div class="grid">
-                <div class="card">
-                    <h2>Salida del programa</h2>
-
-                    {% if result.output %}
-                        <pre>{% for line in result.output %}{{ line }}
-{% endfor %}</pre>
-                    {% else %}
-                        <p>El programa no generó salida.</p>
-                    {% endif %}
-                </div>
-
-                <div class="card">
-                    <h2>Errores léxicos</h2>
-
-                    {% if result.lexical_errors %}
-                        <pre>{% for error in result.lexical_errors %}{{ error.message }}: '{{ error.lexeme }}' en línea {{ error.line }}, columna {{ error.column }}
-{% endfor %}</pre>
-                    {% else %}
-                        <p>Sin errores léxicos.</p>
-                    {% endif %}
-                </div>
-
-                <div class="card">
-                    <h2>Errores sintácticos</h2>
-
-                    {% if result.syntax_errors %}
-                        <pre>{% for error in result.syntax_errors %}{{ error }}
-{% endfor %}</pre>
-                    {% else %}
-                        <p>Sin errores sintácticos.</p>
-                    {% endif %}
-                </div>
-
-                <div class="card">
-                    <h2>Errores semánticos</h2>
-
-                    {% if result.semantic_errors %}
-                        <pre>{% for error in result.semantic_errors %}{{ error }}
-{% endfor %}</pre>
-                    {% else %}
-                        <p>Sin errores semánticos.</p>
-                    {% endif %}
-                </div>
-
-                <div class="card">
-                    <h2>Errores en tiempo de ejecución</h2>
-
-                    {% if result.runtime_errors %}
-                        <pre>{% for error in result.runtime_errors %}{{ error }}
-{% endfor %}</pre>
-                    {% else %}
-                        <p>Sin errores en tiempo de ejecución.</p>
-                    {% endif %}
-                </div>
-
-                <div class="card">
-                    <h2>AST generado</h2>
-
-                    {% if result.ast %}
-                        <pre>{{ result.ast }}</pre>
-                    {% else %}
-                        <p>No se generó AST.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Tokens generados</h2>
-
-                {% if result.tokens %}
+            <div id="tab-tokens" class="tab-content">
+                {% if result and result.tokens %}
                     <table>
                         <thead>
                             <tr>
@@ -276,70 +380,196 @@
                         </tbody>
                     </table>
                 {% else %}
-                    <p>No se generaron tokens.</p>
+                    <p>No hay tokens para mostrar.</p>
                 {% endif %}
             </div>
-        {% endif %}
 
-        <div class="card">
-            <h2>Últimos casos guardados en Firebase</h2>
+            <div id="tab-ast" class="tab-content">
+                {% if result and result.ast %}
+                    <div class="ast-switch">
+                        <button class="secondary" type="button" onclick="openAstView('astPlain')">AST plano</button>
+                        <button class="secondary" type="button" onclick="openAstView('astGraphic')">AST gráfico</button>
+                    </div>
 
-            {% if test_cases %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Fase</th>
-                            <th>Éxito</th>
-                            <th>Salida</th>
-                            <th>Errores</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for case in test_cases %}
+                    <div id="astPlain" class="ast-view active">
+                        <pre>{{ result.ast }}</pre>
+                    </div>
+
+                    <div id="astGraphic" class="ast-view">
+                        <div id="astGraph"></div>
+                    </div>
+                {% else %}
+                    <p>No se generó AST.</p>
+                {% endif %}
+            </div>
+
+            <div id="tab-history" class="tab-content">
+                <h3>Últimos casos guardados</h3>
+
+                {% if test_cases %}
+                    <table>
+                        <thead>
                             <tr>
-                                <td class="small-text">{{ case.id }}</td>
-                                <td>{{ case.phase }}</td>
-                                <td>{{ case.success }}</td>
-                                <td>
-                                    {% if case.output %}
-                                        {% for line in case.output %}
-                                            {{ line }}<br>
-                                        {% endfor %}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if case.lexical_errors %}
-                                        Léxicos: {{ case.lexical_errors|length }}<br>
-                                    {% endif %}
-
-                                    {% if case.syntax_errors %}
-                                        Sintácticos: {{ case.syntax_errors|length }}<br>
-                                    {% endif %}
-
-                                    {% if case.semantic_errors %}
-                                        Semánticos: {{ case.semantic_errors|length }}<br>
-                                    {% endif %}
-
-                                    {% if case.runtime_errors %}
-                                        Runtime: {{ case.runtime_errors|length }}<br>
-                                    {% endif %}
-
-                                    {% if not case.lexical_errors and not case.syntax_errors and not case.semantic_errors and not case.runtime_errors %}
-                                        Sin errores
-                                    {% endif %}
-                                </td>
+                                <th>ID</th>
+                                <th>Fase</th>
+                                <th>Éxito</th>
+                                <th>Salida</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>No hay casos guardados todavía.</p>
-            {% endif %}
-        </div>
+                        </thead>
+                        <tbody>
+                            {% for case in test_cases %}
+                                <tr>
+                                    <td>{{ case.id }}</td>
+                                    <td>{{ case.phase }}</td>
+                                    <td>{{ case.success }}</td>
+                                    <td>
+                                        {% if case.output %}
+                                            {% for line in case.output %}
+                                                {{ line }}<br>
+                                            {% endfor %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No hay casos guardados todavía.</p>
+                {% endif %}
+            </div>
+        </section>
     </main>
+
+    {% if result and result.ast_graph %}
+        <script id="ast-data" type="application/json">
+            {{ result.ast_graph|tojson }}
+        </script>
+    {% else %}
+        <script id="ast-data" type="application/json">
+            null
+        </script>
+    {% endif %}
+
+    <script>
+        function openTab(tabId, button) {
+            const contents = document.querySelectorAll(".tab-content");
+            const buttons = document.querySelectorAll(".tab-button");
+
+            contents.forEach(function(content) {
+                content.classList.remove("active");
+            });
+
+            buttons.forEach(function(btn) {
+                btn.classList.remove("active");
+            });
+
+            document.getElementById(tabId).classList.add("active");
+            button.classList.add("active");
+
+            if (tabId === "tab-ast") {
+                setTimeout(drawAstGraph, 100);
+            }
+        }
+
+        function openAstView(viewId) {
+            const views = document.querySelectorAll(".ast-view");
+
+            views.forEach(function(view) {
+                view.classList.remove("active");
+            });
+
+            document.getElementById(viewId).classList.add("active");
+
+            if (viewId === "astGraphic") {
+                setTimeout(drawAstGraph, 100);
+            }
+        }
+
+        let astGraphDrawn = false;
+
+        function drawAstGraph() {
+            if (astGraphDrawn) {
+                return;
+            }
+
+            const container = document.getElementById("astGraph");
+
+            if (!container) {
+                return;
+            }
+
+            const astDataElement = document.getElementById("ast-data");
+
+            if (!astDataElement) {
+                return;
+            }
+
+            let astData = null;
+
+            try {
+                astData = JSON.parse(astDataElement.textContent);
+            } catch (error) {
+                console.error("No se pudo leer el AST gráfico:", error);
+                return;
+            }
+
+            if (!astData || !astData.nodes || !astData.edges) {
+                return;
+            }
+
+            const nodes = new vis.DataSet(astData.nodes);
+            const edges = new vis.DataSet(astData.edges);
+
+            const data = {
+                nodes: nodes,
+                edges: edges
+            };
+
+            const options = {
+                layout: {
+                    hierarchical: {
+                        enabled: true,
+                        direction: "UD",
+                        sortMethod: "directed",
+                        levelSeparation: 90,
+                        nodeSpacing: 150
+                    }
+                },
+                physics: false,
+                nodes: {
+                    shape: "box",
+                    margin: 10,
+                    font: {
+                        size: 14,
+                        face: "Arial"
+                    },
+                    borderWidth: 1
+                },
+                edges: {
+                    arrows: {
+                        to: {
+                            enabled: true,
+                            scaleFactor: 0.7
+                        }
+                    },
+                    smooth: {
+                        type: "cubicBezier",
+                        forceDirection: "vertical",
+                        roundness: 0.4
+                    }
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true
+                }
+            };
+
+            new vis.Network(container, data, options);
+            astGraphDrawn = true;
+        }
+    </script>
 </body>
 </html>
-```

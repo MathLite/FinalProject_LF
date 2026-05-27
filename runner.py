@@ -3,6 +3,7 @@ from syntax_parser import Parser
 from ast_printer import print_ast
 from semantic_analyzer import SemanticAnalyzer
 from interpreter import Interpreter
+from ast_graph import build_ast_graph
 
 import io
 import sys
@@ -66,6 +67,7 @@ def run_code(code):
         "runtime_errors": [],
         "output": [],
         "ast": None,
+        "ast_graph": None,
         "success": False,
         "phase": None
     }
@@ -89,7 +91,11 @@ def run_code(code):
         result["phase"] = "SYNTAX"
         return result
 
+    #AST PLANO
     result["ast"] = get_ast_as_text(ast)
+
+    #AST GRAFICO
+    result["ast_graph"] = build_ast_graph(ast)
 
     analyzer = SemanticAnalyzer()
     semantic_errors = analyzer.analyze(ast)
