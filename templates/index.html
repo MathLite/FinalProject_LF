@@ -3,42 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intérprete Matemático MathLite</title>
+    <title>MathLite</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Framework frontend: Bulma -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+
+    <!-- D3 para visualización del AST -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
 
         :root {
             --bg: #f6f7f9;
             --surface: #ffffff;
             --surface2: #f1f3f6;
-            --surface3: #e9edf2;
-
             --border: #e2e6ec;
             --border2: #ccd3dd;
-
             --accent: #2f5f8f;
             --accent2: #244d75;
-
             --green: #1f8f5f;
             --red: #c75050;
             --amber: #b9872f;
             --cyan: #3a8d8d;
-
             --text: #1f2933;
             --text2: #566273;
             --text3: #8a95a3;
-
-            --mono: 'JetBrains Mono', monospace;
-            --sans: 'DM Sans', sans-serif;
-            --radius: 12px;
+            --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --mono: Consolas, "Courier New", monospace;
+            --radius: 10px;
         }
 
         html, body {
@@ -48,20 +43,22 @@
             font-family: var(--sans);
             font-size: 14px;
             line-height: 1.6;
+            margin: 0;
         }
 
-        header {
-            height: 66px;
+        .mathlite-header {
+            height: 72px;
             padding: 0 24px;
-            background: var(--surface);
+            background: #ffffff;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 8px rgba(20, 30, 40, 0.04);
+            gap: 18px;
+            box-shadow: 0 2px 12px rgba(30, 40, 50, 0.05);
         }
 
-        .header-brand {
+        .header-left {
             display: flex;
             align-items: center;
             gap: 14px;
@@ -69,8 +66,8 @@
         }
 
         .logo-mark {
-            width: 46px;
-            height: 46px;
+            width: 48px;
+            height: 48px;
             border-radius: 12px;
             border: 1px solid var(--border);
             background: #ffffff;
@@ -82,25 +79,22 @@
         }
 
         .logo-mark img {
-            max-width: 38px;
-            max-height: 38px;
+            max-width: 40px;
+            max-height: 40px;
             object-fit: contain;
             display: block;
         }
 
-        .brand-name {
-            font-family: var(--mono);
-            font-weight: 600;
-            font-size: 16px;
+        .mathlite-title {
             color: var(--text);
-            white-space: nowrap;
+            letter-spacing: -0.4px;
+            line-height: 1.1;
+            font-weight: 700;
         }
 
-        .brand-subtitle {
-            font-size: 11.5px;
+        .mathlite-subtitle {
             color: var(--text3);
-            margin-top: -3px;
-            white-space: nowrap;
+            margin-top: 2px;
         }
 
         .phase-status-bar {
@@ -111,39 +105,17 @@
             justify-content: flex-end;
         }
 
-        .phase-chip {
+        .phase-tag {
             font-family: var(--mono);
             font-size: 10px;
-            padding: 5px 10px;
+            font-weight: 600;
             border-radius: 999px;
-            border: 1px solid var(--border);
-            background: #ffffff;
-            color: var(--text3);
-            white-space: nowrap;
-        }
-
-        .phase-ok-chip {
-            border-color: rgba(31, 143, 95, 0.28);
-            background: #f3fbf6;
-            color: var(--green);
-        }
-
-        .phase-bad {
-            border-color: rgba(199, 80, 80, 0.28);
-            background: #fff5f5;
-            color: var(--red);
-        }
-
-        .phase-idle {
-            border-color: var(--border);
-            background: #ffffff;
-            color: var(--text3);
         }
 
         .workspace {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            height: calc(100vh - 66px);
+            height: calc(100vh - 72px);
             overflow: hidden;
         }
 
@@ -176,30 +148,37 @@
             color: var(--text2);
             text-transform: uppercase;
             letter-spacing: 0.8px;
+            display: block;
+        }
+
+        .panel-caption {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 2px;
         }
 
         .run-btn {
             display: flex;
             align-items: center;
             gap: 7px;
-            padding: 7px 16px;
-            background: var(--accent);
-            color: #ffffff;
+            padding: 8px 18px;
+            background: #2f5f8f !important;
+            color: #ffffff !important;
             border: none;
             border-radius: var(--radius);
             font-family: var(--sans);
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.15s ease;
-            box-shadow: 0 2px 8px rgba(47, 95, 143, 0.16);
+            box-shadow: 0 6px 14px rgba(47, 95, 143, 0.18);
         }
 
         .run-btn:hover {
-            background: var(--accent2);
+            background: #244d75 !important;
             transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(47, 95, 143, 0.24);
         }
-
         .run-btn svg {
             width: 14px;
             height: 14px;
@@ -247,6 +226,11 @@
             tab-size: 4;
         }
 
+        textarea:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
         textarea::selection {
             background: rgba(47, 95, 143, 0.18);
         }
@@ -287,57 +271,54 @@
             background: var(--bg);
         }
 
-        .tabs-bar {
+        .result-tabs {
             display: flex;
             align-items: center;
-            padding: 0 4px;
+            gap: 8px;
+            padding: 10px 14px;
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             overflow-x: auto;
+            flex-shrink: 0;
         }
 
-        .tab-btn {
-            display: flex;
+        .result-tab {
+            display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 11px 14px;
-            background: none;
-            border: none;
-            border-bottom: 2px solid transparent;
-            color: var(--text3);
+            justify-content: center;
+            gap: 7px;
+            min-height: 34px;
+            padding: 7px 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: #ffffff;
+            color: var(--text2);
             font-family: var(--sans);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 3px rgba(20, 30, 40, 0.04);
         }
 
-        .tab-btn:hover {
-            color: var(--text2);
-        }
-
-        .tab-btn.active {
+        .result-tab:hover {
+            border-color: var(--accent);
             color: var(--accent);
-            border-bottom-color: var(--accent);
+            background: #f8fbfd;
         }
 
-        .tab-badge {
+        .result-tab.active {
+            border-color: var(--accent);
+            background: rgba(47, 95, 143, 0.08);
+            color: var(--accent);
+            box-shadow: 0 2px 8px rgba(47, 95, 143, 0.10);
+        }
+
+        .result-tab .tag {
+            margin-left: 2px;
             font-size: 10px;
-            padding: 1px 6px;
-            border-radius: 8px;
-            background: var(--surface2);
-            color: var(--text2);
-            font-family: var(--mono);
-        }
-
-        .tab-badge.error {
-            background: rgba(199, 80, 80, 0.12);
-            color: var(--red);
-        }
-
-        .tab-badge.success {
-            background: rgba(31, 143, 95, 0.12);
-            color: var(--green);
+            height: 20px;
         }
 
         .tab-content {
@@ -398,16 +379,40 @@
             background: var(--red);
         }
 
-        .output-lines {
-            background: var(--surface);
+        .output-console {
+            padding: 0;
+            overflow: hidden;
             border: 1px solid var(--border);
-            border-radius: var(--radius);
+            box-shadow: 0 2px 10px rgba(20, 30, 40, 0.04);
+        }
+
+        .console-header {
+            height: 34px;
+            background: #f3f5f8;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text2);
+        }
+
+        .console-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        .console-body {
             padding: 14px 16px;
             font-family: var(--mono);
             font-size: 13px;
             line-height: 2;
             color: var(--text);
-            box-shadow: 0 2px 10px rgba(20, 30, 40, 0.04);
+            background: #ffffff;
         }
 
         .output-line::before {
@@ -461,9 +466,9 @@
         }
 
         .diag-btn {
-            border: 1px solid var(--border);
-            background: #ffffff;
-            color: var(--text2);
+            border: 1px solid var(--border) !important;
+            background: #ffffff !important;
+            color: var(--text2) !important;
             border-radius: 999px;
             padding: 7px 12px;
             font-size: 12px;
@@ -475,9 +480,9 @@
         }
 
         .diag-btn.active {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: rgba(47, 95, 143, 0.08);
+            border-color: var(--accent) !important;
+            color: var(--accent) !important;
+            background: rgba(47, 95, 143, 0.08) !important;
         }
 
         .diag-content {
@@ -487,35 +492,103 @@
         .diag-content.active {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
-        .error-card {
-            background: #fff7f7;
-            border: 1px solid rgba(199, 80, 80, 0.18);
+        .message {
             border-radius: var(--radius);
-            padding: 12px 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(20, 30, 40, 0.04);
         }
 
-        .error-type {
-            font-size: 10px;
+        .message-header {
             font-family: var(--mono);
-            text-transform: uppercase;
-            letter-spacing: 0.7px;
-            color: var(--red);
-            margin-bottom: 4px;
-            font-weight: 600;
+            font-size: 11px;
         }
 
-        .error-msg {
+        .message-body {
             font-family: var(--mono);
-            font-size: 12.5px;
-            color: #7c2f2f;
-            line-height: 1.5;
+            font-size: 12px;
+        }
+
+        .success-message {
+            border: none;
+            box-shadow: 0 8px 18px rgba(31, 143, 95, 0.12);
+        }
+
+        .success-message .message-header {
+            background: #58d68d;
+            color: #06351f;
+            font-weight: 700;
+            padding: 12px 18px;
+        }
+
+        .success-message .message-body {
+            background: #06351f;
+            color: #baf7d5;
+            border: none;
+            padding: 18px 22px;
+            line-height: 1.8;
+        }
+
+        .neutral-message {
+            border: none;
+            box-shadow: 0 6px 14px rgba(86, 98, 115, 0.08);
+        }
+
+        .neutral-message .message-header {
+            background: #eef1f5;
+            color: var(--text2);
+            font-weight: 700;
+            padding: 12px 18px;
+        }
+
+        .neutral-message .message-body {
+            background: #ffffff;
+            color: var(--text3);
+            border: 1px solid var(--border);
+            border-top: none;
+            padding: 18px 22px;
+            line-height: 1.8;
+        }
+
+        .diag-btn.not-run {
+            opacity: 0.65;
+            background: #f8fafc !important;
+            color: var(--text3) !important;
+        }
+
+        .error-message {
+            border: none;
+            box-shadow: 0 8px 18px rgba(199, 80, 80, 0.14);
+        }
+
+        .error-message .message-header {
+            background: #ff5f85;
+            color: #24020b;
+            font-weight: 700;
+            padding: 12px 18px;
+        }
+
+        .error-message .message-body {
+            background: #560013;
+            color: #ffd2dc;
+            border: none;
+            padding: 18px 22px;
+            line-height: 1.8;
         }
 
         .tokens-table-wrap {
             overflow-x: auto;
+        }
+
+        .tokens-box {
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(20, 30, 40, 0.04);
         }
 
         .tokens-table {
@@ -523,35 +596,49 @@
             border-collapse: collapse;
             font-family: var(--mono);
             font-size: 12px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
+            background: #ffffff;
+            color: var(--text);
+            margin-bottom: 0 !important;
         }
 
-        .tokens-table th {
-            text-align: left;
-            padding: 8px 10px;
-            color: var(--text3);
+        .tokens-table thead th {
+            background: #f8fafc !important;
+            color: var(--text2) !important;
             font-size: 10px;
             text-transform: uppercase;
-            border-bottom: 1px solid var(--border);
-            background: #fbfcfd;
-        }
-
-        .tokens-table td {
-            padding: 7px 10px;
-            color: var(--text2);
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            padding: 10px 12px;
             border-bottom: 1px solid var(--border);
         }
 
-        .tokens-table tr:hover td {
-            background: #f8fafc;
+        .tokens-table tbody tr {
+            background: #ffffff !important;
+        }
+
+        .tokens-table tbody tr:nth-child(even) {
+            background: #fbfcfd !important;
+        }
+
+        .tokens-table tbody tr:hover {
+            background: #eef5fb !important;
+        }
+
+        .tokens-table tbody td {
+            padding: 9px 12px;
+            color: var(--text2) !important;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .tokens-table tbody tr:hover td {
+            color: var(--text) !important;
         }
 
         .lexeme {
             font-family: var(--mono);
             color: var(--text);
+            font-weight: 500;
         }
 
         .muted {
@@ -559,11 +646,15 @@
         }
 
         .token-type-badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 54px;
+            padding: 3px 8px;
+            border-radius: 6px;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.2px;
         }
 
         .tt-keyword {
@@ -609,19 +700,19 @@
 
         .ast-view-btn {
             padding: 5px 12px;
-            background: #ffffff;
-            border: 1px solid var(--border2);
+            background: #ffffff !important;
+            border: 1px solid var(--border2) !important;
             border-radius: 6px;
-            color: var(--text2);
+            color: var(--text2) !important;
             font-family: var(--sans);
             font-size: 12px;
             cursor: pointer;
         }
 
         .ast-view-btn.active {
-            background: rgba(47, 95, 143, 0.08);
-            border-color: var(--accent);
-            color: var(--accent);
+            background: rgba(47, 95, 143, 0.08) !important;
+            border-color: var(--accent) !important;
+            color: var(--accent) !important;
             font-weight: 600;
         }
 
@@ -762,7 +853,7 @@
         }
 
         @media (max-width: 1000px) {
-            header {
+            .mathlite-header {
                 height: auto;
                 padding: 12px 16px;
                 align-items: flex-start;
@@ -770,13 +861,8 @@
                 flex-direction: column;
             }
 
-            .brand-name,
-            .brand-subtitle {
-                white-space: normal;
-            }
-
             .workspace {
-                height: calc(100vh - 118px);
+                height: calc(100vh - 130px);
             }
         }
 
@@ -800,38 +886,41 @@
 {% set runtime_count = result.runtime_errors|length if result and result.runtime_errors else 0 %}
 {% set total_error_count = lexical_count + syntax_count + semantic_count + runtime_count %}
 
+{# Control de fases ejecutadas: una fase solo se considera evaluada si las anteriores no fallaron #}
+{% set lexical_done = result is not none %}
+{% set syntax_done = result and not result.lexical_errors %}
+{% set semantic_done = result and not result.lexical_errors and not result.syntax_errors and result.ast %}
+{% set runtime_done = result and not result.lexical_errors and not result.syntax_errors and not result.semantic_errors and result.ast %}
+
 <body data-auto-tab="{% if result and total_error_count > 0 %}errors{% else %}output{% endif %}">
-    <header>
-        <div class="header-brand">
+    <header class="mathlite-header">
+        <div class="header-left">
             <div class="logo-mark">
                 <img src="{{ url_for('static', filename='images/logo_universidad.png') }}" alt="Logo Universidad">
             </div>
+
             <div>
-                <div class="brand-name">Intérprete Matemático MathLite</div>
-                <div class="brand-subtitle">
-                    Proyecto Final de Lenguajes Formales · Profesores Marco Javier y Cristian Suancha
-                </div>
+                <h1 class="title is-5 mb-0 mathlite-title">MathLite</h1>
+                <p class="subtitle is-7 mb-0 mathlite-subtitle">
+                    Intérprete matemático para Lenguajes Formales
+                </p>
             </div>
         </div>
 
         <div class="phase-status-bar">
-            <span class="phase-chip {% if result and result.lexical_errors %}phase-bad{% elif result %}phase-ok-chip{% else %}phase-idle{% endif %}">
+            <span class="tag phase-tag {% if lexical_done and result.lexical_errors %}is-danger is-light{% elif lexical_done %}is-success is-light{% else %}is-light{% endif %}">
                 Léxico
             </span>
 
-            <span class="phase-chip {% if result and result.syntax_errors %}phase-bad{% elif result and not result.lexical_errors %}phase-ok-chip{% else %}phase-idle{% endif %}">
-                Sintaxis
+            <span class="tag phase-tag {% if syntax_done and result.syntax_errors %}is-danger is-light{% elif syntax_done %}is-success is-light{% else %}is-light{% endif %}">
+                Sintáctico
             </span>
 
-            <span class="phase-chip {% if result and result.ast %}phase-ok-chip{% elif result %}phase-bad{% else %}phase-idle{% endif %}">
-                AST
+            <span class="tag phase-tag {% if semantic_done and result.semantic_errors %}is-danger is-light{% elif semantic_done %}is-success is-light{% else %}is-light{% endif %}">
+                Semántico
             </span>
 
-            <span class="phase-chip {% if result and result.semantic_errors %}phase-bad{% elif result and result.ast and not result.syntax_errors and not result.lexical_errors %}phase-ok-chip{% else %}phase-idle{% endif %}">
-                Semántica
-            </span>
-
-            <span class="phase-chip {% if result and result.runtime_errors %}phase-bad{% elif result and result.success %}phase-ok-chip{% elif result %}phase-idle{% else %}phase-idle{% endif %}">
+            <span class="tag phase-tag {% if runtime_done and result.runtime_errors %}is-danger is-light{% elif runtime_done and result.success %}is-success is-light{% else %}is-light{% endif %}">
                 Ejecución
             </span>
         </div>
@@ -841,10 +930,14 @@
         <section class="editor-panel">
             <form method="POST" class="editor-form" id="main-form">
                 <div class="panel-header">
-                    <span class="panel-title">Programa MathLite</span>
-                    <button type="submit" class="run-btn" id="run-btn">
+                    <div>
+                        <span class="panel-title">Editor</span>
+                        <p class="panel-caption">Código fuente MathLite</p>
+                    </div>
+
+                    <button type="submit" class="button is-link is-small run-btn" id="run-btn">
                         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5l10 5.5-10 5.5z"/></svg>
-                        Analizar
+                        Analizar programa
                     </button>
                 </div>
 
@@ -872,34 +965,36 @@
         </section>
 
         <section class="output-panel">
-            <nav class="tabs-bar" aria-label="Panel de resultados">
-                <button class="tab-btn active" type="button" data-tab="output">
-                    Consola
+            <nav class="result-tabs" aria-label="Panel de resultados">
+                <button class="result-tab active" type="button" data-tab="output">
+                    Salida
                     {% if result and result.output %}
-                        <span class="tab-badge success">{{ result.output|length }}</span>
+                        <span class="tag is-success is-light is-rounded">{{ result.output|length }}</span>
                     {% endif %}
                 </button>
 
-                <button class="tab-btn" type="button" data-tab="errors">
-                    Diagnóstico
+                <button class="result-tab" type="button" data-tab="errors">
+                    Errores
                     {% if total_error_count > 0 %}
-                        <span class="tab-badge error">{{ total_error_count }}</span>
+                        <span class="tag is-danger is-light is-rounded">{{ total_error_count }}</span>
                     {% endif %}
                 </button>
 
-                <button class="tab-btn" type="button" data-tab="ast">Árbol</button>
+                <button class="result-tab" type="button" data-tab="ast">
+                    AST
+                </button>
 
-                <button class="tab-btn" type="button" data-tab="tokens">
-                    Léxico
+                <button class="result-tab" type="button" data-tab="tokens">
+                    Tokens
                     {% if result and result.tokens %}
-                        <span class="tab-badge">{{ result.tokens|length }}</span>
+                        <span class="tag is-info is-light is-rounded">{{ result.tokens|length }}</span>
                     {% endif %}
                 </button>
 
-                <button class="tab-btn" type="button" data-tab="history">
-                    Registro
+                <button class="result-tab" type="button" data-tab="history">
+                    Historial
                     {% if test_cases %}
-                        <span class="tab-badge">{{ test_cases|length }}</span>
+                        <span class="tag is-light is-rounded">{{ test_cases|length }}</span>
                     {% endif %}
                 </button>
             </nav>
@@ -908,28 +1003,41 @@
                 <div class="output-section">
                     {% if result %}
                         {% if result.success %}
-                            <div class="status-bar success">
-                                <div class="status-dot"></div>
-                                Programa validado · Fase final: {{ result.phase }}
-                                {% if saved_id %} · ID: {{ saved_id[:12] }}…{% endif %}
-                            </div>
+                            <article class="message is-success is-small success-message">
+                                <div class="message-header">
+                                    <p>Programa validado</p>
+                                </div>
+                                <div class="message-body">
+                                    Fase final: <strong>{{ result.phase }}</strong>{% if saved_id %} · ID: {{ saved_id[:12] }}…{% endif %}
+                                </div>
+                            </article>
                         {% else %}
-                            <div class="status-bar error">
-                                <div class="status-dot"></div>
-                                Análisis detenido · Fase: {{ result.phase }}
-                            </div>
+                            <article class="message is-danger is-small error-message">
+                                <div class="message-header">
+                                    <p>Análisis detenido</p>
+                                </div>
+                                <div class="message-body">
+                                    Fase: <strong>{{ result.phase }}</strong>
+                                </div>
+                            </article>
                         {% endif %}
 
                         {% if result.output %}
-                            <div class="output-lines">
-                                {% for line in result.output %}
-                                    <div class="output-line">{{ line }}</div>
-                                {% endfor %}
+                            <div class="box output-console">
+                                <div class="console-header">
+                                    <span class="console-dot"></span>
+                                    <span>Salida del programa</span>
+                                </div>
+
+                                <div class="console-body">
+                                    {% for line in result.output %}
+                                        <div class="output-line">{{ line }}</div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         {% else %}
-                            <div class="empty-state clean">
-                                <span>◌</span>
-                                Sin salida en consola.
+                            <div class="notification is-light">
+                                Sin salida.
                             </div>
                         {% endif %}
                     {% endif %}
@@ -940,31 +1048,31 @@
                 {% if result %}
                     <div class="diagnostic-panel">
                         <div class="diagnostic-tabs">
-                            <button class="diag-btn active" type="button" data-diag="lexical">
+                            <button class="button is-small diag-btn active" type="button" data-diag="lexical">
                                 Léxico
                                 {% if result.lexical_errors %}
-                                    <span class="tab-badge error">{{ result.lexical_errors|length }}</span>
+                                    <span class="tag is-danger is-light is-rounded ml-2">{{ result.lexical_errors|length }}</span>
                                 {% endif %}
                             </button>
 
-                            <button class="diag-btn" type="button" data-diag="syntax">
+                            <button class="button is-small diag-btn {% if not syntax_done %}not-run{% endif %}" type="button" data-diag="syntax">
                                 Sintáctico
                                 {% if result.syntax_errors %}
-                                    <span class="tab-badge error">{{ result.syntax_errors|length }}</span>
+                                    <span class="tag is-danger is-light is-rounded ml-2">{{ result.syntax_errors|length }}</span>
                                 {% endif %}
                             </button>
 
-                            <button class="diag-btn" type="button" data-diag="semantic">
+                            <button class="button is-small diag-btn {% if not semantic_done %}not-run{% endif %}" type="button" data-diag="semantic">
                                 Semántico
                                 {% if result.semantic_errors %}
-                                    <span class="tab-badge error">{{ result.semantic_errors|length }}</span>
+                                    <span class="tag is-danger is-light is-rounded ml-2">{{ result.semantic_errors|length }}</span>
                                 {% endif %}
                             </button>
 
-                            <button class="diag-btn" type="button" data-diag="runtime">
+                            <button class="button is-small diag-btn {% if not runtime_done %}not-run{% endif %}" type="button" data-diag="runtime">
                                 Ejecución
                                 {% if result.runtime_errors %}
-                                    <span class="tab-badge error">{{ result.runtime_errors|length }}</span>
+                                    <span class="tag is-danger is-light is-rounded ml-2">{{ result.runtime_errors|length }}</span>
                                 {% endif %}
                             </button>
                         </div>
@@ -972,59 +1080,130 @@
                         <div class="diag-content active" id="diag-lexical">
                             {% if result.lexical_errors %}
                                 {% for e in result.lexical_errors %}
-                                    <div class="error-card">
-                                        <div class="error-type">Error léxico · Línea {{ e.line }}, columna {{ e.column }}</div>
-                                        <div class="error-msg">{{ e.message }}{% if e.lexeme %}: '{{ e.lexeme }}'{% endif %}</div>
-                                    </div>
+                                    <article class="message is-danger is-small">
+                                        <div class="message-header">
+                                            <p>Error léxico · Línea {{ e.line }}, columna {{ e.column }}</p>
+                                        </div>
+                                        <div class="message-body">
+                                            {{ e.message }}{% if e.lexeme %}: <strong>{{ e.lexeme }}</strong>{% endif %}
+                                        </div>
+                                    </article>
                                 {% endfor %}
                             {% else %}
-                                <div class="success-state"><span>✓</span>Sin errores léxicos.</div>
+                                <article class="message is-success is-small success-message">
+                                    <div class="message-header">
+                                        <p>Sin errores léxicos</p>
+                                    </div>
+                                    <div class="message-body">
+                                        La fase léxica finalizó correctamente.
+                                    </div>
+                                </article>
                             {% endif %}
                         </div>
 
                         <div class="diag-content" id="diag-syntax">
-                            {% if result.syntax_errors %}
-                                {% for e in result.syntax_errors %}
-                                    <div class="error-card">
-                                        <div class="error-type">Error sintáctico</div>
-                                        <div class="error-msg">{{ e }}</div>
+                            {% if not syntax_done %}
+                                <article class="message is-small neutral-message">
+                                    <div class="message-header">
+                                        <p>Análisis sintáctico no realizado</p>
                                     </div>
+                                    <div class="message-body">
+                                        Esta fase no se ejecutó porque el análisis se detuvo en una fase anterior.
+                                    </div>
+                                </article>
+                            {% elif result.syntax_errors %}
+                                {% for e in result.syntax_errors %}
+                                    <article class="message is-danger is-small">
+                                        <div class="message-header">
+                                            <p>Error sintáctico</p>
+                                        </div>
+                                        <div class="message-body">
+                                            {{ e }}
+                                        </div>
+                                    </article>
                                 {% endfor %}
                             {% else %}
-                                <div class="success-state"><span>✓</span>Sin errores sintácticos.</div>
+                                <article class="message is-success is-small success-message">
+                                    <div class="message-header">
+                                        <p>Sin errores sintácticos</p>
+                                    </div>
+                                    <div class="message-body">
+                                        La estructura del programa cumple la gramática definida.
+                                    </div>
+                                </article>
                             {% endif %}
                         </div>
 
                         <div class="diag-content" id="diag-semantic">
-                            {% if result.semantic_errors %}
-                                {% for e in result.semantic_errors %}
-                                    <div class="error-card">
-                                        <div class="error-type">Error semántico</div>
-                                        <div class="error-msg">{{ e }}</div>
+                            {% if not semantic_done %}
+                                <article class="message is-small neutral-message">
+                                    <div class="message-header">
+                                        <p>Análisis semántico no realizado</p>
                                     </div>
+                                    <div class="message-body">
+                                        Esta fase no se ejecutó porque el programa no llegó a superar las fases previas.
+                                    </div>
+                                </article>
+                            {% elif result.semantic_errors %}
+                                {% for e in result.semantic_errors %}
+                                    <article class="message is-danger is-small">
+                                        <div class="message-header">
+                                            <p>Error semántico</p>
+                                        </div>
+                                        <div class="message-body">
+                                            {{ e }}
+                                        </div>
+                                    </article>
                                 {% endfor %}
                             {% else %}
-                                <div class="success-state"><span>✓</span>Sin errores semánticos.</div>
+                                <article class="message is-success is-small success-message">
+                                    <div class="message-header">
+                                        <p>Sin errores semánticos</p>
+                                    </div>
+                                    <div class="message-body">
+                                        Las variables, funciones y tipos fueron validados correctamente.
+                                    </div>
+                                </article>
                             {% endif %}
                         </div>
 
                         <div class="diag-content" id="diag-runtime">
-                            {% if result.runtime_errors %}
-                                {% for e in result.runtime_errors %}
-                                    <div class="error-card">
-                                        <div class="error-type">Error de ejecución</div>
-                                        <div class="error-msg">{{ e }}</div>
+                            {% if not runtime_done %}
+                                <article class="message is-small neutral-message">
+                                    <div class="message-header">
+                                        <p>Ejecución no realizada</p>
                                     </div>
+                                    <div class="message-body">
+                                        El intérprete no ejecutó el programa porque el análisis se detuvo antes de la fase de ejecución.
+                                    </div>
+                                </article>
+                            {% elif result.runtime_errors %}
+                                {% for e in result.runtime_errors %}
+                                    <article class="message is-danger is-small">
+                                        <div class="message-header">
+                                            <p>Error de ejecución</p>
+                                        </div>
+                                        <div class="message-body">
+                                            {{ e }}
+                                        </div>
+                                    </article>
                                 {% endfor %}
                             {% else %}
-                                <div class="success-state"><span>✓</span>Sin errores de ejecución.</div>
+                                <article class="message is-success is-small success-message">
+                                    <div class="message-header">
+                                        <p>Sin errores de ejecución</p>
+                                    </div>
+                                    <div class="message-body">
+                                        El programa no presentó fallos durante la interpretación.
+                                    </div>
+                                </article>
                             {% endif %}
                         </div>
                     </div>
                 {% else %}
                     <div class="empty-state clean">
                         <span>◌</span>
-                        Ejecuta el código para consultar el diagnóstico por fase.
+                        Ejecuta el código para consultar errores por fase.
                     </div>
                 {% endif %}
             </div>
@@ -1033,8 +1212,8 @@
                 {% if result and result.ast %}
                     <div class="ast-panel">
                         <div class="ast-toolbar">
-                            <button class="ast-view-btn active" type="button" id="btn-visual">Vista gráfica</button>
-                            <button class="ast-view-btn" type="button" id="btn-text">Vista plana</button>
+                            <button class="button is-small ast-view-btn active" type="button" id="btn-visual">Vista gráfica</button>
+                            <button class="button is-small ast-view-btn" type="button" id="btn-text">Vista plana</button>
                         </div>
 
                         <div class="ast-visual-wrap" id="ast-visual-view">
@@ -1046,53 +1225,64 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="empty-state clean"><span>◌</span>No se generó AST. Ejecuta código válido.</div>
+                    <div class="empty-state clean"><span>◌</span>No se generó AST.</div>
                 {% endif %}
             </div>
 
             <div class="tab-content" id="tab-tokens">
                 {% if result and result.tokens %}
                     <div class="tokens-table-wrap">
-                        <table class="tokens-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Tipo</th>
-                                    <th>Lexema</th>
-                                    <th>Línea</th>
-                                    <th>Col</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for token in result.tokens %}
-                                    <tr>
-                                        <td class="muted">{{ loop.index }}</td>
-                                        <td>
-                                            {% set t = token.type %}
-                                            {% if t in ['LET','DEF','IF','ELSE','WHILE','RETURN','PRINT','AND','OR','NOT','TRUE','FALSE'] %}
-                                                <span class="token-type-badge tt-keyword">{{ t }}</span>
-                                            {% elif t in ['INT','REAL','STRING'] %}
-                                                <span class="token-type-badge tt-literal">{{ t }}</span>
-                                            {% elif t in ['PLUS','MINUS','MULT','DIV','MOD','POW','EQ','NEQ','LT','GT','LTE','GTE','ASSIGN'] %}
-                                                <span class="token-type-badge tt-op">{{ t }}</span>
-                                            {% elif t == 'ID' %}
-                                                <span class="token-type-badge tt-id">{{ t }}</span>
-                                            {% elif t == 'EOF' %}
-                                                <span class="token-type-badge tt-eof">{{ t }}</span>
-                                            {% else %}
-                                                <span class="token-type-badge tt-delim">{{ t }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="lexeme">{{ token.lexeme if token.lexeme != '\n' else '↵' }}</td>
-                                        <td>{{ token.line }}</td>
-                                        <td>{{ token.column }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="box tokens-box">
+                            <div class="table-container">
+                                <table class="table is-fullwidth is-hoverable tokens-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Tipo</th>
+                                            <th>Lexema</th>
+                                            <th>Línea</th>
+                                            <th>Columna</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for token in result.tokens %}
+                                            <tr>
+                                                <td class="muted">{{ loop.index }}</td>
+                                                <td>
+                                                    {% set t = token.type %}
+                                                    {% if t in ['LET','DEF','IF','ELSE','WHILE','RETURN','PRINT','AND','OR','NOT','TRUE','FALSE'] %}
+                                                        <span class="token-type-badge tt-keyword">{{ t }}</span>
+                                                    {% elif t in ['INT','REAL','STRING'] %}
+                                                        <span class="token-type-badge tt-literal">{{ t }}</span>
+                                                    {% elif t in ['PLUS','MINUS','MULT','DIV','MOD','POW','EQ','NEQ','LT','GT','LTE','GTE','ASSIGN'] %}
+                                                        <span class="token-type-badge tt-op">{{ t }}</span>
+                                                    {% elif t == 'ID' %}
+                                                        <span class="token-type-badge tt-id">{{ t }}</span>
+                                                    {% elif t == 'EOF' %}
+                                                        <span class="token-type-badge tt-eof">{{ t }}</span>
+                                                    {% else %}
+                                                        <span class="token-type-badge tt-delim">{{ t }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="lexeme">
+                                                    {% if token.lexeme == '
+' %}
+                                                        <span class="muted">salto de línea</span>
+                                                    {% else %}
+                                                        {{ token.lexeme }}
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ token.line }}</td>
+                                                <td>{{ token.column }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 {% else %}
-                    <div class="empty-state clean"><span>◌</span>No hay tokens. Ejecuta primero.</div>
+                    <div class="empty-state clean"><span>◌</span>No hay tokens.</div>
                 {% endif %}
             </div>
 
@@ -1125,7 +1315,7 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="empty-state clean"><span>◌</span>No hay casos guardados todavía.</div>
+                    <div class="empty-state clean"><span>◌</span>No hay casos guardados.</div>
                 {% endif %}
             </div>
         </section>
@@ -1195,7 +1385,7 @@ null
             }
 
             function activateTab(tabName) {
-                document.querySelectorAll(".tab-btn").forEach(function (button) {
+                document.querySelectorAll(".result-tab").forEach(function (button) {
                     button.classList.remove("active");
                 });
 
@@ -1203,7 +1393,7 @@ null
                     content.classList.remove("active");
                 });
 
-                const button = document.querySelector('[data-tab="' + tabName + '"]');
+                const button = document.querySelector('.result-tab[data-tab="' + tabName + '"]');
                 const content = document.getElementById("tab-" + tabName);
 
                 if (button && content) {
@@ -1216,7 +1406,7 @@ null
                 }
             }
 
-            document.querySelectorAll(".tab-btn").forEach(function (button) {
+            document.querySelectorAll(".result-tab").forEach(function (button) {
                 button.addEventListener("click", function () {
                     activateTab(button.dataset.tab);
                 });
@@ -1321,8 +1511,8 @@ null
                     return null;
                 }
 
-                if (value.includes("ProgramNode")) return "Program";
-                if (value.includes("BlockNode")) return "Block";
+                if (value.includes("ProgramNode")) return "ProgramNode";
+                if (value.includes("BlockNode")) return "BlockNode";
                 if (value.includes("VarDeclNode")) return value.replace("VarDeclNode:", "VarDeclNode:");
                 if (value.includes("FuncDefNode")) return value.replace("FuncDefNode:", "FuncDefNode:");
                 if (value.includes("FuncCallNode")) return value.replace("FuncCallNode:", "FuncCallNode:");
