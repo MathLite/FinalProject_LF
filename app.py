@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from runner import run_code
 from test_case_repository import TestCaseRepository
 
@@ -36,18 +36,19 @@ print(suma(10, 20))
 print(sqrt(25))
 """
 
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     code = DEFAULT_CODE
     result = None
     saved_id = None
-    test_cases = repository.get_last_test_cases(10)
 
     if request.method == "POST":
         code = request.form.get("code", "")
         result = run_code(code)
         saved_id = repository.save_test_case(code, result)
-        test_cases = repository.get_last_test_cases(10)
+
+    test_cases = repository.get_all_test_cases()
 
     return render_template(
         "index.html",
@@ -56,6 +57,27 @@ def index():
         saved_id=saved_id,
         test_cases=test_cases
     )
+
+
+@app.route("/api/test-cases/<case_id>", methods=["GET"])
+def get_test_case(case_id):
+    case = repository.get_test_case_by_id(case_id)
+
+    if case is None:
+        return jsonify({
+            "success": False,
+            "message": "Caso de prueba no encontrado"
+        }), 404
+
+    code = case.get("code", "")
+
+    return jsonify({
+        "success": True,
+        "id": case.get("id"),
+        "code": code,
+        "phase": case.get("phase"),
+        "output": case.get("output", [])
+    })
 
 
 if __name__ == "__main__":

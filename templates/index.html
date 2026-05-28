@@ -834,6 +834,27 @@
             white-space: nowrap;
         }
 
+        .history-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .load-case-btn {
+            border: 1px solid var(--border) !important;
+            background: #ffffff !important;
+            color: var(--accent) !important;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+        }
+
+        .load-case-btn:hover {
+            border-color: var(--accent) !important;
+            background: rgba(47, 95, 143, 0.08) !important;
+        }
+
         ::-webkit-scrollbar {
             width: 7px;
             height: 7px;
@@ -877,6 +898,7 @@
                 border-bottom: 1px solid var(--border);
             }
         }
+        
     </style>
 </head>
 
@@ -1286,7 +1308,7 @@
                 {% endif %}
             </div>
 
-            <div class="tab-content" id="tab-history">
+           <div class="tab-content" id="tab-history">
                 {% if test_cases %}
                     <div class="history-list">
                         {% for case in test_cases %}
@@ -1310,6 +1332,15 @@
                                     {% else %}
                                         Sin salida
                                     {% endif %}
+                                </div>
+
+                                <div class="history-actions">
+                                    <button
+                                        type="button"
+                                        class="button is-small load-case-btn"
+                                        data-case-id="{{ case.id }}">
+                                        Cargar en editor
+                                    </button>
                                 </div>
                             </div>
                         {% endfor %}
@@ -1435,6 +1466,127 @@ null
                     }
                 });
             });
+            
+            document.querySelectorAll(".load-case-btn").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    const caseId = button.dataset.caseId;
+
+                    if (!caseId) {
+                        alert("El caso de prueba no tiene ID.");
+                        return;
+                    }
+
+                    fetch("/api/test-cases/" + caseId)
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error("No se pudo cargar el caso de prueba");
+                            }
+
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (!data.success) {
+                                alert(data.message || "No se pudo cargar el caso de prueba");
+                                return;
+                            }
+
+                            if (codeArea) {
+                                codeArea.value = data.code || "";
+                                updateStats();
+                                updateLineNumbers();
+                                codeArea.focus();
+                            }
+
+                            resetAnalysisPanelsAfterLoad(caseId);
+                            activateTab("output");
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            alert("No se pudo recuperar el caso de prueba desde Firebase.");
+                        });
+                });
+            });
+
+            function resetAnalysisPanelsAfterLoad(caseId) {
+                const outputTab = document.getElementById("tab-output");
+                const errorsTab = document.getElementById("tab-errors");
+                const astTab = document.getElementById("tab-ast");
+                const tokensTab = document.getElementById("tab-tokens");
+
+                if (outputTab) {
+                    outputTab.innerHTML = `
+                        <div class="output-section">
+                            <article class="message is-small neutral-message">
+                                <div class="message-header">
+                                    <p>Caso de prueba cargado</p>
+                                </div>
+                                <div class="message-body">
+                                    El programa fue recuperado desde Firebase y cargado en el editor.
+                                    Presiona <strong>Analizar programa</strong> para ejecutar nuevamente sus fases.
+                                </div>
+                            </article>
+                        </div>
+                    `;
+                }
+
+                if (errorsTab) {
+                    errorsTab.innerHTML = `
+                        <div class="empty-state clean">
+                            <span>◌</span>
+                            Los diagnósticos se actualizarán después de analizar el programa cargado.
+                        </div>
+                    `;
+                }
+
+                if (astTab) {
+                    astTab.innerHTML = `
+                        <div class="empty-state clean">
+                            <span>◌</span>
+                            El AST se generará nuevamente al analizar el programa.
+                        </div>
+                    `;
+                }
+
+                if (tokensTab) {
+                    tokensTab.innerHTML = `
+                        <div class="empty-state clean">
+                            <span>◌</span>
+                            La tabla de tokens se actualizará después del análisis léxico.
+                        </div>
+                    `;
+                }
+
+                document.querySelectorAll(".phase-status-bar .phase-tag").forEach(function (tag) {
+                    tag.classList.remove("is-success", "is-danger");
+                    tag.classList.add("is-light");
+                });
+
+                document.querySelectorAll(".result-tab").forEach(function (tab) {
+                    if (tab.dataset.tab !== "history") {
+                        const badge = tab.querySelector(".tag");
+                        if (badge) {
+                            badge.remove();
+                        }
+                    }
+                });
+
+                const phaseStat = document.querySelector(".phase-stat");
+
+                if (phaseStat) {
+                    phaseStat.innerHTML = `
+                        Fase:
+                        <span style="color: var(--text3); font-weight: 600;">PENDIENTE</span>
+                    `;
+                }
+
+                const rawAstElement = document.getElementById("raw-ast-data");
+
+                if (rawAstElement) {
+                    rawAstElement.textContent = "null";
+                }
+
+                astRendered = false;
+            }
 
             const btnVisual = document.getElementById("btn-visual");
             const btnText = document.getElementById("btn-text");
