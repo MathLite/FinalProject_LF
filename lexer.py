@@ -82,7 +82,7 @@ class Lexer:
         self.string_re = re.compile(r'"[^"\n]*"')
         self.real_re = re.compile(r'\d+\.\d+')
         self.int_re = re.compile(r'\d+')
-        self.id_re = re.compile(r'[A-Za-z][A-Za-z0-9_]*')
+        self.id_re = re.compile(r'[A-Za-z_][A-Za-z0-9_]*')
 
     def finished(self):
         return self.position >= len(self.input)
