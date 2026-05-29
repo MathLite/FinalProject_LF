@@ -107,6 +107,15 @@ class SemanticAnalyzer:
     # =========================
 
     def visit_VarDeclNode(self, node):
+        if node.name in self.builtin_functions:
+            self.report_error(
+                "BUILTIN_NAME_REDECLARATION",
+                "No se puede usar '{}' como nombre de variable porque es una función integrada del lenguaje.".format(node.name),
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
         value_type = self.visit(node.value)
 
         if self.symbol_table.current_scope_contains(node.name):
@@ -125,6 +134,15 @@ class SemanticAnalyzer:
         return value_type
 
     def visit_FuncDefNode(self, node):
+        if node.name in self.builtin_functions:
+            self.report_error(
+                "BUILTIN_NAME_REDECLARATION",
+                "No se puede definir la función '{}' porque ya existe como función integrada del lenguaje.".format(node.name),
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
         if self.symbol_table.current_scope_contains(node.name):
             self.report_error(
                 "REDECLARED_FUNC",
@@ -145,7 +163,13 @@ class SemanticAnalyzer:
         self.symbol_table.enter_scope()
 
         for param_name in node.params:
-            if self.symbol_table.current_scope_contains(param_name):
+            if param_name in self.builtin_functions:
+                self.report_error(
+                    "BUILTIN_NAME_REDECLARATION",
+                    "No se puede usar '{}' como nombre de parámetro porque es una función integrada del lenguaje.".format(param_name),
+                    node.line
+                )
+            elif self.symbol_table.current_scope_contains(param_name):
                 self.report_error(
                     "REDECLARED_VAR",
                     "El parámetro '{}' está duplicado en la definición de la función '{}'.".format(
