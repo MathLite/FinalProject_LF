@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MathLite</title>
 
-    <!-- Framework frontend: Bulma -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
-
-    <!-- D3 para visualización del AST -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
     <style>
@@ -22,15 +19,19 @@
             --surface2: #f1f3f6;
             --border: #e2e6ec;
             --border2: #ccd3dd;
+
             --accent: #2f5f8f;
             --accent2: #244d75;
+
             --green: #1f8f5f;
             --red: #c75050;
             --amber: #b9872f;
             --cyan: #3a8d8d;
+
             --text: #1f2933;
             --text2: #566273;
             --text3: #8a95a3;
+
             --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             --mono: Consolas, "Courier New", monospace;
             --radius: 10px;
@@ -179,6 +180,7 @@
             transform: translateY(-1px);
             box-shadow: 0 8px 18px rgba(47, 95, 143, 0.24);
         }
+
         .run-btn svg {
             width: 14px;
             height: 14px;
@@ -229,10 +231,6 @@
         textarea:focus {
             outline: none;
             box-shadow: none;
-        }
-
-        textarea::selection {
-            background: rgba(47, 95, 143, 0.18);
         }
 
         .editor-footer {
@@ -436,10 +434,6 @@
             color: var(--text3);
         }
 
-        .success-state {
-            color: var(--green);
-        }
-
         .empty-state.clean {
             background: transparent;
             border: none;
@@ -483,6 +477,12 @@
             border-color: var(--accent) !important;
             color: var(--accent) !important;
             background: rgba(47, 95, 143, 0.08) !important;
+        }
+
+        .diag-btn.not-run {
+            opacity: 0.65;
+            background: #f8fafc !important;
+            color: var(--text3) !important;
         }
 
         .diag-content {
@@ -531,6 +531,26 @@
             line-height: 1.8;
         }
 
+        .error-message {
+            border: none;
+            box-shadow: 0 8px 18px rgba(199, 80, 80, 0.14);
+        }
+
+        .error-message .message-header {
+            background: #ff5f85;
+            color: #24020b;
+            font-weight: 700;
+            padding: 12px 18px;
+        }
+
+        .error-message .message-body {
+            background: #560013;
+            color: #ffd2dc;
+            border: none;
+            padding: 18px 22px;
+            line-height: 1.8;
+        }
+
         .neutral-message {
             border: none;
             box-shadow: 0 6px 14px rgba(86, 98, 115, 0.08);
@@ -548,32 +568,6 @@
             color: var(--text3);
             border: 1px solid var(--border);
             border-top: none;
-            padding: 18px 22px;
-            line-height: 1.8;
-        }
-
-        .diag-btn.not-run {
-            opacity: 0.65;
-            background: #f8fafc !important;
-            color: var(--text3) !important;
-        }
-
-        .error-message {
-            border: none;
-            box-shadow: 0 8px 18px rgba(199, 80, 80, 0.14);
-        }
-
-        .error-message .message-header {
-            background: #ff5f85;
-            color: #24020b;
-            font-weight: 700;
-            padding: 12px 18px;
-        }
-
-        .error-message .message-body {
-            background: #560013;
-            color: #ffd2dc;
-            border: none;
             padding: 18px 22px;
             line-height: 1.8;
         }
@@ -898,7 +892,6 @@
                 border-bottom: 1px solid var(--border);
             }
         }
-        
     </style>
 </head>
 
@@ -908,11 +901,14 @@
 {% set runtime_count = result.runtime_errors|length if result and result.runtime_errors else 0 %}
 {% set total_error_count = lexical_count + syntax_count + semantic_count + runtime_count %}
 
-{# Control de fases ejecutadas: una fase solo se considera evaluada si las anteriores no fallaron #}
+{# 
+    Cada fase se evalúa de forma independiente.
+    El runner puede continuar acumulando errores aunque una fase anterior haya fallado.
+#}
 {% set lexical_done = result is not none %}
-{% set syntax_done = result and not result.lexical_errors %}
-{% set semantic_done = result and not result.lexical_errors and not result.syntax_errors and result.ast %}
-{% set runtime_done = result and not result.lexical_errors and not result.syntax_errors and not result.semantic_errors and result.ast %}
+{% set syntax_done = result is not none %}
+{% set semantic_done = result is not none and result.ast %}
+{% set runtime_done = result is not none and result.ast %}
 
 <body data-auto-tab="{% if result and total_error_count > 0 %}errors{% else %}output{% endif %}">
     <header class="mathlite-header">
@@ -930,19 +926,19 @@
         </div>
 
         <div class="phase-status-bar">
-            <span class="tag phase-tag {% if lexical_done and result.lexical_errors %}is-danger is-light{% elif lexical_done %}is-success is-light{% else %}is-light{% endif %}">
+            <span class="tag phase-tag {% if lexical_done and lexical_count > 0 %}is-danger is-light{% elif lexical_done %}is-success is-light{% else %}is-light{% endif %}">
                 Léxico
             </span>
 
-            <span class="tag phase-tag {% if syntax_done and result.syntax_errors %}is-danger is-light{% elif syntax_done %}is-success is-light{% else %}is-light{% endif %}">
+            <span class="tag phase-tag {% if syntax_done and syntax_count > 0 %}is-danger is-light{% elif syntax_done %}is-success is-light{% else %}is-light{% endif %}">
                 Sintáctico
             </span>
 
-            <span class="tag phase-tag {% if semantic_done and result.semantic_errors %}is-danger is-light{% elif semantic_done %}is-success is-light{% else %}is-light{% endif %}">
+            <span class="tag phase-tag {% if semantic_done and semantic_count > 0 %}is-danger is-light{% elif semantic_done %}is-success is-light{% else %}is-light{% endif %}">
                 Semántico
             </span>
 
-            <span class="tag phase-tag {% if runtime_done and result.runtime_errors %}is-danger is-light{% elif runtime_done and result.success %}is-success is-light{% else %}is-light{% endif %}">
+            <span class="tag phase-tag {% if runtime_done and runtime_count > 0 %}is-danger is-light{% elif runtime_done %}is-success is-light{% else %}is-light{% endif %}">
                 Ejecución
             </span>
         </div>
@@ -1077,7 +1073,7 @@
                                 {% endif %}
                             </button>
 
-                            <button class="button is-small diag-btn {% if not syntax_done %}not-run{% endif %}" type="button" data-diag="syntax">
+                            <button class="button is-small diag-btn" type="button" data-diag="syntax">
                                 Sintáctico
                                 {% if result.syntax_errors %}
                                     <span class="tag is-danger is-light is-rounded ml-2">{{ result.syntax_errors|length }}</span>
@@ -1124,16 +1120,7 @@
                         </div>
 
                         <div class="diag-content" id="diag-syntax">
-                            {% if not syntax_done %}
-                                <article class="message is-small neutral-message">
-                                    <div class="message-header">
-                                        <p>Análisis sintáctico no realizado</p>
-                                    </div>
-                                    <div class="message-body">
-                                        Esta fase no se ejecutó porque el análisis se detuvo en una fase anterior.
-                                    </div>
-                                </article>
-                            {% elif result.syntax_errors %}
+                            {% if result.syntax_errors %}
                                 {% for e in result.syntax_errors %}
                                     <article class="message is-danger is-small">
                                         <div class="message-header">
@@ -1163,7 +1150,7 @@
                                         <p>Análisis semántico no realizado</p>
                                     </div>
                                     <div class="message-body">
-                                        Esta fase no se ejecutó porque el programa no llegó a superar las fases previas.
+                                        No se generó un AST válido para ejecutar la revisión semántica.
                                     </div>
                                 </article>
                             {% elif result.semantic_errors %}
@@ -1196,7 +1183,7 @@
                                         <p>Ejecución no realizada</p>
                                     </div>
                                     <div class="message-body">
-                                        El intérprete no ejecutó el programa porque el análisis se detuvo antes de la fase de ejecución.
+                                        No se ejecutó el programa porque no se generó un AST válido.
                                     </div>
                                 </article>
                             {% elif result.runtime_errors %}
@@ -1272,7 +1259,7 @@
                                                 <td class="muted">{{ loop.index }}</td>
                                                 <td>
                                                     {% set t = token.type %}
-                                                    {% if t in ['LET','DEF','IF','ELSE','WHILE','RETURN','PRINT','AND','OR','NOT','TRUE','FALSE'] %}
+                                                    {% if t in ['LET','DEF','IF','ELSE','WHILE','RETURN','PRINT','AND','OR','NOT','TRUE','FALSE','SIN','COS','TAN','SQRT','LOG','ABS','FLOOR','CEIL'] %}
                                                         <span class="token-type-badge tt-keyword">{{ t }}</span>
                                                     {% elif t in ['INT','REAL','STRING'] %}
                                                         <span class="token-type-badge tt-literal">{{ t }}</span>
@@ -1287,8 +1274,7 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="lexeme">
-                                                    {% if token.lexeme == '
-' %}
+                                                    {% if token.lexeme == '\n' %}
                                                         <span class="muted">salto de línea</span>
                                                     {% else %}
                                                         {{ token.lexeme }}
@@ -1308,7 +1294,7 @@
                 {% endif %}
             </div>
 
-           <div class="tab-content" id="tab-history">
+            <div class="tab-content" id="tab-history">
                 {% if test_cases %}
                     <div class="history-list">
                         {% for case in test_cases %}
@@ -1466,46 +1452,6 @@ null
                     }
                 });
             });
-            
-            document.querySelectorAll(".load-case-btn").forEach(function (button) {
-                button.addEventListener("click", function () {
-                    const caseId = button.dataset.caseId;
-
-                    if (!caseId) {
-                        alert("El caso de prueba no tiene ID.");
-                        return;
-                    }
-
-                    fetch("/api/test-cases/" + caseId)
-                        .then(function (response) {
-                            if (!response.ok) {
-                                throw new Error("No se pudo cargar el caso de prueba");
-                            }
-
-                            return response.json();
-                        })
-                        .then(function (data) {
-                            if (!data.success) {
-                                alert(data.message || "No se pudo cargar el caso de prueba");
-                                return;
-                            }
-
-                            if (codeArea) {
-                                codeArea.value = data.code || "";
-                                updateStats();
-                                updateLineNumbers();
-                                codeArea.focus();
-                            }
-
-                            resetAnalysisPanelsAfterLoad(caseId);
-                            activateTab("output");
-                        })
-                        .catch(function (error) {
-                            console.error(error);
-                            alert("No se pudo recuperar el caso de prueba desde Firebase.");
-                        });
-                });
-            });
 
             function resetAnalysisPanelsAfterLoad(caseId) {
                 const outputTab = document.getElementById("tab-output");
@@ -1587,6 +1533,46 @@ null
 
                 astRendered = false;
             }
+
+            document.querySelectorAll(".load-case-btn").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    const caseId = button.dataset.caseId;
+
+                    if (!caseId) {
+                        alert("El caso de prueba no tiene ID.");
+                        return;
+                    }
+
+                    fetch("/api/test-cases/" + caseId)
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error("No se pudo cargar el caso de prueba");
+                            }
+
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            if (!data.success) {
+                                alert(data.message || "No se pudo cargar el caso de prueba");
+                                return;
+                            }
+
+                            if (codeArea) {
+                                codeArea.value = data.code || "";
+                                updateStats();
+                                updateLineNumbers();
+                                codeArea.focus();
+                            }
+
+                            resetAnalysisPanelsAfterLoad(caseId);
+                            activateTab("output");
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                            alert("No se pudo recuperar el caso de prueba desde Firebase.");
+                        });
+                });
+            });
 
             const btnVisual = document.getElementById("btn-visual");
             const btnText = document.getElementById("btn-text");

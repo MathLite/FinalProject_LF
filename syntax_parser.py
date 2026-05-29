@@ -133,11 +133,21 @@ class Parser:
 
         return self.parse_expr_stmt()
 
+
     def parse_var_decl(self):
-        line = self.current().line        
+        line = self.current().line
 
         let_token = self.consume("LET", "Se esperaba 'let'")
         if let_token is None:
+            return None
+
+        if self.is_builtin_function_token(self.current().type):
+            token = self.current()
+            self.error(
+                token,
+                "No se puede usar '{}' como nombre de variable porque es una palabra reservada del lenguaje".format(token.lexeme)
+            )
+            self.advance()
             return None
 
         name_token = self.consume("ID", "Se esperaba un identificador")
@@ -161,6 +171,15 @@ class Parser:
         if def_token is None:
             return None
 
+        if self.is_builtin_function_token(self.current().type):
+            token = self.current()
+            self.error(
+                token,
+                "No se puede definir la función '{}' porque es una palabra reservada del lenguaje".format(token.lexeme)
+            )
+            self.advance()
+            return None
+
         name_token = self.consume("ID", "Se esperaba el nombre de la función")
         if name_token is None:
             return None
@@ -173,6 +192,15 @@ class Parser:
 
         if not self.check("RPAREN"):
 
+            if self.is_builtin_function_token(self.current().type):
+                token = self.current()
+                self.error(
+                    token,
+                    "No se puede usar '{}' como nombre de parámetro porque es una palabra reservada del lenguaje".format(token.lexeme)
+                )
+                self.advance()
+                return None
+
             first_param = self.consume("ID", "Se esperaba un parámetro")
             if first_param is None:
                 return None
@@ -180,6 +208,15 @@ class Parser:
             params.append(first_param.lexeme)
 
             while self.match("COMMA"):
+
+                if self.is_builtin_function_token(self.current().type):
+                    token = self.current()
+                    self.error(
+                        token,
+                        "No se puede usar '{}' como nombre de parámetro porque es una palabra reservada del lenguaje".format(token.lexeme)
+                    )
+                    self.advance()
+                    return None
 
                 param = self.consume("ID", "Se esperaba un parámetro")
                 if param is None:
@@ -196,6 +233,7 @@ class Parser:
             return None
 
         return FuncDefNode(name_token.lexeme, params, body, line=line)
+
 
     def parse_block(self):
         line = self.current().line
@@ -445,41 +483,99 @@ class Parser:
             return UnaryOpNode(operator, operand, line=line)
 
         return self.parse_primary()
+    
+
+
+    def parse_builtin_call(self):
+        function_token = self.advance()
+        function_name = function_token.lexeme
+        line = function_token.line
+
+        if not self.match("LPAREN"):
+            self.error(
+                function_token,
+                "La función integrada '{}' debe invocarse con paréntesis".format(function_name)
+            )
+            return None
+
+        args = []
+
+        if not self.check("RPAREN"):
+            first_arg = self.parse_expression()
+            if first_arg is None:
+                return None
+
+            args.append(first_arg)
+
+            while self.match("COMMA"):
+                arg = self.parse_expression()
+                if arg is None:
+                    return None
+
+                args.append(arg)
+
+        rparen_token = self.consume(
+            "RPAREN",
+            "Se esperaba ')' después de los argumentos de la función integrada"
+        )
+
+        if rparen_token is None:
+            return None
+
+        return FuncCallNode(function_name, args, line=line)
+    
+    def is_builtin_function_token(self, token_type):
+        return token_type in (
+            "SIN",
+            "COS",
+            "TAN",
+            "SQRT",
+            "LOG",
+            "ABS",
+            "FLOOR",
+            "CEIL"
+        )
 
     def parse_primary(self):
         if self.match("INT", "REAL"):
             return NumberNode(self.previous().lexeme, line=self.previous().line)
 
         if self.match("STRING"):
-            # Agregamos line
             return StringNode(self.previous().lexeme, line=self.previous().line)
 
         if self.match("TRUE"):
-            # Agregamos line
             return BoolNode(True, line=self.previous().line)
 
         if self.match("FALSE"):
-            # Agregamos line
             return BoolNode(False, line=self.previous().line)
 
-        if self.match("ID", "SIN", "COS", "TAN", "SQRT", "LOG", "ABS", "FLOOR", "CEIL"):
+        if self.is_builtin_function_token(self.current().type):
+            return self.parse_builtin_call()
+
+        if self.match("ID"):
             line = self.previous().line
             name = self.previous().lexeme
 
             if self.match("LPAREN"):
                 args = []
+
                 if not self.check("RPAREN"):
                     first_arg = self.parse_expression()
-                    if first_arg is None: return None
+                    if first_arg is None:
+                        return None
+
                     args.append(first_arg)
 
                     while self.match("COMMA"):
                         arg = self.parse_expression()
-                        if arg is None: return None
+                        if arg is None:
+                            return None
+
                         args.append(arg)
 
                 rparen_token = self.consume("RPAREN", "Se esperaba ')'")
-                if rparen_token is None: return None
+                if rparen_token is None:
+                    return None
 
                 return FuncCallNode(name, args, line=line)
 
@@ -487,10 +583,12 @@ class Parser:
 
         if self.match("LPAREN"):
             expr = self.parse_expression()
-            if expr is None: return None
+            if expr is None:
+                return None
 
             rparen_token = self.consume("RPAREN", "Se esperaba ')'")
-            if rparen_token is None: return None
+            if rparen_token is None:
+                return None
 
             return expr
 

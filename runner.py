@@ -56,6 +56,21 @@ def format_runtime_errors(errors):
 
     return result
 
+def determine_phase(lexical_errors, syntax_errors, semantic_errors, runtime_errors):
+    if lexical_errors:
+        return "LEXICAL"
+
+    if syntax_errors:
+        return "SYNTAX"
+
+    if semantic_errors:
+        return "SEMANTIC"
+
+    if runtime_errors:
+        return "RUNTIME"
+
+    return "SUCCESS"
+
 
 def run_code(code):
     result = {
@@ -76,41 +91,37 @@ def run_code(code):
     result["tokens"] = format_tokens(tokens)
     result["lexical_errors"] = format_lexical_errors(lexical_errors)
 
-    if lexical_errors:
-        result["phase"] = "LEXICAL"
-        return result
-
     parser = Parser(tokens)
     ast = parser.parse()
 
     result["syntax_errors"] = parser.errors
 
-    if parser.errors:
-        result["phase"] = "SYNTAX"
-        return result
+    if ast is not None:
+        result["ast"] = get_ast_as_text(ast)
 
-    result["ast"] = get_ast_as_text(ast)
+        analyzer = SemanticAnalyzer()
+        semantic_errors = analyzer.analyze(ast)
 
-    analyzer = SemanticAnalyzer()
-    semantic_errors = analyzer.analyze(ast)
+        result["semantic_errors"] = semantic_errors
 
-    result["semantic_errors"] = semantic_errors
+        interpreter = Interpreter()
+        output, runtime_errors = interpreter.interpret(ast)
 
-    if semantic_errors:
-        result["phase"] = "SEMANTIC"
-        return result
+        result["output"] = output
+        result["runtime_errors"] = format_runtime_errors(runtime_errors)
 
-    interpreter = Interpreter()
-    output, runtime_errors = interpreter.interpret(ast)
+    result["success"] = (
+        len(result["lexical_errors"]) == 0 and
+        len(result["syntax_errors"]) == 0 and
+        len(result["semantic_errors"]) == 0 and
+        len(result["runtime_errors"]) == 0
+    )
 
-    result["output"] = output
-    result["runtime_errors"] = format_runtime_errors(runtime_errors)
-
-    if runtime_errors:
-        result["phase"] = "RUNTIME"
-        return result
-
-    result["success"] = True
-    result["phase"] = "SUCCESS"
+    result["phase"] = determine_phase(
+        result["lexical_errors"],
+        result["syntax_errors"],
+        result["semantic_errors"],
+        result["runtime_errors"]
+    )
 
     return result
