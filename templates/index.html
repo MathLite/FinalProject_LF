@@ -135,7 +135,8 @@
         }
 
         .panel-header {
-            padding: 12px 16px;
+            height: 56px;
+            padding: 0 16px;
             border-bottom: 1px solid var(--border);
             background: var(--surface);
             display: flex;
@@ -273,7 +274,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px;
+            height: 56px;
+            padding: 0 14px;
             background: var(--surface);
             border-bottom: 1px solid var(--border);
             overflow-x: auto;
@@ -867,6 +869,71 @@
             background: #b8c1cc;
         }
 
+        /* Estilos de la Suite de Pruebas */
+        .suite-category-header {
+            transition: all 0.2s ease;
+        }
+        .suite-category-header:hover {
+            background-color: rgba(47, 95, 143, 0.08) !important;
+            border-color: var(--accent) !important;
+        }
+        .suite-category-header:hover span {
+            color: var(--accent) !important;
+        }
+        
+        .suite-badge {
+            background-color: rgba(47, 95, 143, 0.15) !important;
+            color: var(--accent) !important;
+            font-weight: 700 !important;
+        }
+
+        .load-suite-btn {
+            border-radius: 999px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            height: 26px !important;
+            border: 1px solid var(--border) !important;
+            background: #ffffff !important;
+            color: var(--accent) !important;
+            padding: 0 12px !important;
+            line-height: 24px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        .load-suite-btn:hover {
+            border-color: var(--accent) !important;
+            background: rgba(47, 95, 143, 0.08) !important;
+            color: var(--accent) !important;
+        }
+
+        /* Focus styles for modal inputs */
+        #add-suite-modal input.input:focus,
+        #add-suite-modal textarea.textarea:focus,
+        #add-suite-modal select:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 0.125em rgba(47, 95, 143, 0.25) !important;
+        }
+
+        #add-suite-modal .select:not(.is-multiple):not(.is-loading)::after {
+            border-color: var(--accent) !important;
+        }
+
+        #add-suite-modal .select select {
+            background-color: #ffffff !important;
+            color: #1f2933 !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 6px !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+            font-size: 13px !important;
+            transition: all 0.2s ease !important;
+        }
+        #add-suite-modal .select select:hover {
+            border-color: var(--accent) !important;
+            background-color: #fcfdfe !important;
+        }
+
         @media (max-width: 1000px) {
             .mathlite-header {
                 height: auto;
@@ -1013,6 +1080,13 @@
                     Historial
                     {% if test_cases %}
                         <span class="tag is-light is-rounded">{{ test_cases|length }}</span>
+                    {% endif %}
+                </button>
+
+                <button class="result-tab" type="button" data-tab="suite">
+                    Suite de Pruebas
+                    {% if test_suite %}
+                        <span class="tag is-rounded suite-badge" id="suite-count-badge">{{ test_suite|length }}</span>
                     {% endif %}
                 </button>
             </nav>
@@ -1335,6 +1409,86 @@
                     <div class="empty-state clean"><span>◌</span>No hay casos guardados.</div>
                 {% endif %}
             </div>
+
+            <div class="tab-content" id="tab-suite">
+                <div class="suite-panel" style="padding: 18px 20px;">
+                    <!-- Mensaje de Notificación de Éxito -->
+                    <div id="suite-notification" class="notification is-success is-light" style="display: none; border-radius: var(--radius); font-family: var(--sans); font-size: 13px; font-weight: 600; margin-bottom: 16px; border: 1px solid rgba(31, 143, 95, 0.22); position: relative; padding: 12px 20px;">
+                        <button class="delete" type="button" onclick="document.getElementById('suite-notification').style.display='none'" style="position: absolute; right: 10px; top: 12px;"></button>
+                        <span id="suite-notification-text">El caso de prueba se ha actualizado correctamente.</span>
+                    </div>
+                    <!-- Lista de Categorías -->
+                    <div class="suite-categories">
+                        {% set categories = [
+                            "Programas Válidos",
+                            "Errores Léxicos",
+                            "Errores Sintácticos",
+                            "Errores Semánticos",
+                            "Errores en Tiempo de Ejecución",
+                            "Personalizados"
+                        ] %}
+
+                        {% for cat in categories %}
+                            {% set cat_cases = [] %}
+                            {% if test_suite %}
+                                {% for case in test_suite %}
+                                    {% if case.category == cat %}
+                                        {% set _ = cat_cases.append(case) %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {% set cat_id = cat.replace(' ', '-').replace('ó', 'o').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ú', 'u') %}
+                            <div class="suite-category-item mb-3" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden;">
+                                <header class="suite-category-header" style="padding: 12px 16px; background: #fbfcfd; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid var(--border);" onclick="toggleCategory('{{ cat_id }}')">
+                                    <span class="has-text-weight-bold" style="color: var(--text2);">{{ cat }}</span>
+                                    <div class="is-flex is-align-items-center gap-2">
+                                        <span class="tag is-rounded suite-badge">{{ cat_cases|length }}</span>
+                                        <span class="category-icon-{{ cat_id }}" style="font-family: var(--mono); font-size: 11px;">▼</span>
+                                    </div>
+                                </header>
+                                <div class="suite-category-content p-3" id="cat-content-{{ cat_id }}" style="display: none; background: #ffffff;">
+                                    {% if cat_cases|length > 0 %}
+                                        <div class="columns is-multiline">
+                                            {% for case in cat_cases %}
+                                                <div class="column is-12">
+                                                    <div class="box p-3 mb-2" style="border: 1px solid var(--border); box-shadow: none; border-radius: 8px; background: #ffffff !important; color: var(--text) !important;">
+                                                        <div class="is-flex is-justify-content-between is-align-items-start mb-2">
+                                                            <span class="has-text-weight-semibold" style="color: var(--text) !important; font-size: 13px;">{{ case.name }}</span>
+                                                        </div>
+                                                        <div style="background: rgba(47, 95, 143, 0.05) !important; color: var(--accent) !important; padding: 8px; border-radius: 6px; font-family: var(--mono); font-size: 11px; max-height: 80px; overflow-y: auto; white-space: pre-wrap; margin-bottom: 8px;">{{ case.code }}</div>
+                                                        <div class="is-flex is-align-items-center">
+                                                            <button class="button is-small is-light edit-suite-btn" type="button" data-id="{{ case.id }}" data-name="{{ case.name | escape }}" data-category="{{ case.category }}" data-code="{{ case.code | escape }}" style="border-radius: 999px; font-size: 11px; font-weight: 700; height: 26px; border: 1px solid var(--border) !important; background: #ffffff !important; color: var(--accent) !important; margin-right: 6px;">
+                                                                Editar
+                                                            </button>
+                                                            <button class="button is-small is-danger is-light delete-suite-btn" type="button" data-id="{{ case.id }}" style="border-radius: 999px; font-size: 11px; font-weight: 700; height: 26px; border: 1px solid rgba(199, 80, 80, 0.2) !important; background: #ffffff !important; color: var(--red) !important; margin-right: 6px;">
+                                                                Borrar
+                                                            </button>
+                                                            <button class="button is-small load-case-btn load-suite-btn" type="button" data-code="{{ case.code | escape }}">
+                                                                Cargar en editor
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="has-text-centered py-3" style="color: var(--text3); font-family: var(--mono); font-size: 11px;">
+                                            No hay pruebas en esta categoría.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Botón Agregar Prueba al Final -->
+                    <div class="is-flex is-justify-content-end mt-4">
+                        <button class="button is-link run-btn" type="button" id="btn-open-add-modal">
+                            + Agregar Prueba
+                        </button>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -1467,8 +1621,7 @@ null
                                     <p>Caso de prueba cargado</p>
                                 </div>
                                 <div class="message-body">
-                                    El programa fue recuperado desde Firebase y cargado en el editor.
-                                    Presiona <strong>Analizar programa</strong> para ejecutar nuevamente sus fases.
+                                    El prorgama fue cargado en el editor. Preciona el botón de <strong>Analizar programa</strong> para ver los resultados.
                                 </div>
                             </article>
                         </div>
@@ -1573,6 +1726,312 @@ null
                         });
                 });
             });
+
+            // Lógica Suite de Pruebas
+            window.toggleCategory = function(catId) {
+                const content = document.getElementById("cat-content-" + catId);
+                const icon = document.querySelector(".category-icon-" + catId);
+                if (content) {
+                    if (content.style.display === "none") {
+                        content.style.display = "block";
+                        if (icon) icon.textContent = "▲";
+                    } else {
+                        content.style.display = "none";
+                        if (icon) icon.textContent = "▼";
+                    }
+                }
+            };
+
+            document.addEventListener("click", function(event) {
+                if (event.target.classList.contains("load-suite-btn")) {
+                    const code = event.target.dataset.code;
+                    const codeArea = document.getElementById("code");
+                    if (codeArea) {
+                        codeArea.value = code;
+                        codeArea.dispatchEvent(new Event("input"));
+                        codeArea.focus();
+                    }
+                    resetAnalysisPanelsAfterLoad("suite");
+                    activateTab("output");
+                }
+            });
+
+            const addSuiteModal = document.getElementById("add-suite-modal");
+            const btnOpenAddModal = document.getElementById("btn-open-add-modal");
+            const modalTitleText = document.getElementById("modal-title-text");
+            const btnSaveNewCase = document.getElementById("btn-save-new-case");
+            const editCaseId = document.getElementById("edit-case-id");
+            const modalErrorMsg = document.getElementById("modal-error-message");
+            
+            function showModalError(message) {
+                if (modalErrorMsg) {
+                    modalErrorMsg.textContent = message;
+                    modalErrorMsg.style.display = "block";
+                }
+            }
+
+            function hideModalError() {
+                if (modalErrorMsg) {
+                    modalErrorMsg.style.display = "none";
+                    modalErrorMsg.textContent = "";
+                }
+            }
+
+            if (btnOpenAddModal && addSuiteModal) {
+                btnOpenAddModal.addEventListener("click", function() {
+                    hideModalError();
+                    if (editCaseId) editCaseId.value = "";
+                    if (modalTitleText) modalTitleText.textContent = "Agregar Caso de Prueba a la Suite";
+                    if (btnSaveNewCase) {
+                        btnSaveNewCase.textContent = "Guardar Prueba";
+                        btnSaveNewCase.classList.remove("is-loading");
+                    }
+                    document.getElementById("new-case-name").value = "";
+                    document.getElementById("new-case-code").value = "";
+                    document.getElementById("new-case-category").value = "Personalizados";
+                    
+                    addSuiteModal.classList.add("is-active");
+                });
+            }
+            
+            window.closeModal = function() {
+                if (addSuiteModal) {
+                    addSuiteModal.classList.remove("is-active");
+                    document.getElementById("new-case-name").value = "";
+                    document.getElementById("new-case-code").value = "";
+                    if (editCaseId) editCaseId.value = "";
+                    hideModalError();
+                }
+            };
+
+            // Delegar eventos para Editar y Borrar
+            document.addEventListener("click", function(event) {
+                // Evento EDITAR
+                if (event.target.classList.contains("edit-suite-btn")) {
+                    const id = event.target.dataset.id;
+                    const name = event.target.dataset.name;
+                    const category = event.target.dataset.category;
+                    const code = event.target.dataset.code;
+
+                    hideModalError();
+                    if (editCaseId) editCaseId.value = id;
+                    if (modalTitleText) modalTitleText.textContent = "Editar Caso de Prueba";
+                    if (btnSaveNewCase) {
+                        btnSaveNewCase.textContent = "Guardar Cambios";
+                        btnSaveNewCase.classList.remove("is-loading");
+                    }
+
+                    document.getElementById("new-case-name").value = name;
+                    document.getElementById("new-case-category").value = category;
+                    document.getElementById("new-case-code").value = code;
+
+                    addSuiteModal.classList.add("is-active");
+                }
+
+                // Evento BORRAR (abrir modal)
+                if (event.target.classList.contains("delete-suite-btn")) {
+                    caseIdToDelete = event.target.dataset.id;
+                    if (deleteSuiteModal) {
+                        deleteSuiteModal.classList.add("is-active");
+                    }
+                }
+            });
+
+            let caseIdToDelete = null;
+            const deleteSuiteModal = document.getElementById("delete-suite-modal");
+            const btnConfirmDelete = document.getElementById("btn-confirm-delete");
+
+            window.closeDeleteModal = function() {
+                if (deleteSuiteModal) {
+                    deleteSuiteModal.classList.remove("is-active");
+                }
+                caseIdToDelete = null;
+                if (btnConfirmDelete) {
+                    btnConfirmDelete.classList.remove("is-loading");
+                }
+            };
+
+            function showSuiteNotification(message, type = "success") {
+                const notification = document.getElementById("suite-notification");
+                const notificationText = document.getElementById("suite-notification-text");
+                if (notification && notificationText) {
+                    notificationText.textContent = message;
+                    notification.className = `notification is-${type} is-light`;
+                    notification.style.display = "block";
+                    
+                    if (window.suiteNotificationTimeout) {
+                        clearTimeout(window.suiteNotificationTimeout);
+                    }
+                    window.suiteNotificationTimeout = setTimeout(() => {
+                        notification.style.display = "none";
+                    }, 4000);
+                }
+            }
+
+            if (btnConfirmDelete) {
+                btnConfirmDelete.addEventListener("click", function() {
+                    if (!caseIdToDelete) return;
+                    btnConfirmDelete.classList.add("is-loading");
+                    fetch("/api/test-suite/" + caseIdToDelete, {
+                        method: "DELETE"
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Error de red al intentar eliminar.");
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        btnConfirmDelete.classList.remove("is-loading");
+                        window.closeDeleteModal();
+                        if (data.success) {
+                            loadTestSuite();
+                        } else {
+                            alert(data.message || "Error al eliminar.");
+                        }
+                    })
+                    .catch(err => {
+                        btnConfirmDelete.classList.remove("is-loading");
+                        window.closeDeleteModal();
+                        console.error(err);
+                        alert("Error de conexión al intentar eliminar.");
+                    });
+                });
+            }
+
+            if (btnSaveNewCase) {
+                btnSaveNewCase.addEventListener("click", function() {
+                    const name = document.getElementById("new-case-name").value.trim();
+                    const category = document.getElementById("new-case-category").value;
+                    const code = document.getElementById("new-case-code").value.trim();
+                    const id = editCaseId ? editCaseId.value : "";
+                    
+                    if (!name || !code) {
+                        showModalError("El nombre y el código son obligatorios.");
+                        return;
+                    }
+                    
+                    hideModalError();
+                    btnSaveNewCase.classList.add("is-loading");
+                    
+                    const url = id ? `/api/test-suite/${id}` : "/api/test-suite";
+                    const method = id ? "PUT" : "POST";
+                    
+                    fetch(url, {
+                        method: method,
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ name, category, code })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errData => {
+                                throw new Error(errData.message || "Error al guardar el caso de prueba.");
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        btnSaveNewCase.classList.remove("is-loading");
+                        if (data.success) {
+                            window.closeModal();
+                            loadTestSuite();
+                            if (id) {
+                                showSuiteNotification("El caso de prueba se ha actualizado correctamente.");
+                            }
+                        } else {
+                            showModalError(data.message || "Error al guardar.");
+                        }
+                    })
+                    .catch(err => {
+                        btnSaveNewCase.classList.remove("is-loading");
+                        console.error(err);
+                        showModalError(err.message || "Error de conexión con el servidor.");
+                    });
+                });
+            }
+            
+            function loadTestSuite() {
+                fetch("/api/test-suite")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const badge = document.getElementById("suite-count-badge");
+                        if (badge) {
+                            badge.textContent = data.cases.length;
+                        }
+                        
+                        const categories = [
+                            "Programas Válidos",
+                            "Errores Léxicos",
+                            "Errores Sintácticos",
+                            "Errores Semánticos",
+                            "Errores en Tiempo de Ejecución",
+                            "Personalizados"
+                        ];
+                        
+                        categories.forEach(cat => {
+                            const catId = cat.replace(/ /g, '-').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ú/g, 'u');
+                            const container = document.getElementById("cat-content-" + catId);
+                            if (!container) return;
+                            
+                            const catCases = data.cases.filter(c => c.category === cat);
+                            
+                            const catHeader = container.previousElementSibling;
+                            if (catHeader) {
+                                const countTag = catHeader.querySelector(".tag");
+                                if (countTag) {
+                                    countTag.textContent = catCases.length;
+                                }
+                            }
+                            
+                            if (catCases.length > 0) {
+                                let html = '<div class="columns is-multiline">';
+                                catCases.forEach(c => {
+                                    const escapedCode = c.code
+                                        .replace(/&/g, "&amp;")
+                                        .replace(/</g, "&lt;")
+                                        .replace(/>/g, "&gt;")
+                                        .replace(/"/g, "&quot;")
+                                        .replace(/'/g, "&#039;");
+                                        
+                                    html += `
+                                        <div class="column is-12">
+                                            <div class="box p-3 mb-2" style="border: 1px solid var(--border); box-shadow: none; border-radius: 8px; background: #ffffff !important; color: var(--text) !important;">
+                                                <div class="is-flex is-justify-content-between is-align-items-start mb-2">
+                                                    <span class="has-text-weight-semibold" style="color: var(--text) !important; font-size: 13px;">${c.name}</span>
+                                                </div>
+                                                <div style="background: rgba(47, 95, 143, 0.05) !important; color: var(--accent) !important; padding: 8px; border-radius: 6px; font-family: var(--mono); font-size: 11px; max-height: 80px; overflow-y: auto; white-space: pre-wrap; margin-bottom: 8px;">${escapedCode}</div>
+                                                <div class="is-flex is-align-items-center">
+                                                    <button class="button is-small is-light edit-suite-btn" type="button" data-id="${c.id}" data-name="${c.name.replace(/"/g, '&quot;')}" data-category="${c.category}" data-code="${escapedCode}" style="border-radius: 999px; font-size: 11px; font-weight: 700; height: 26px; border: 1px solid var(--border) !important; background: #ffffff !important; color: var(--accent) !important; margin-right: 6px;">
+                                                        Editar
+                                                    </button>
+                                                    <button class="button is-small is-danger is-light delete-suite-btn" type="button" data-id="${c.id}" style="border-radius: 999px; font-size: 11px; font-weight: 700; height: 26px; border: 1px solid rgba(199, 80, 80, 0.2) !important; background: #ffffff !important; color: var(--red) !important; margin-right: 6px;">
+                                                        Borrar
+                                                    </button>
+                                                    <button class="button is-small load-case-btn load-suite-btn" type="button" data-code="${escapedCode}">
+                                                        Cargar en editor
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                                html += '</div>';
+                                container.innerHTML = html;
+                            } else {
+                                container.innerHTML = `
+                                    <div class="has-text-centered py-3" style="color: var(--text3); font-family: var(--mono); font-size: 11px;">
+                                        No hay pruebas en esta categoría.
+                                    </div>
+                                `;
+                            }
+                        });
+                    }
+                })
+                .catch(err => console.error("Error cargando test suite:", err));
+            }
 
             const btnVisual = document.getElementById("btn-visual");
             const btnText = document.getElementById("btn-text");
@@ -1833,5 +2292,74 @@ null
             }
         });
     </script>
+    <!-- Modal Agregar Caso de Prueba -->
+    <div class="modal" id="add-suite-modal">
+        <div class="modal-background" onclick="closeModal()"></div>
+        <div class="modal-card" style="border-radius: var(--radius); overflow: hidden; max-width: 500px; width: 95%;">
+            <header class="modal-card-head" style="background: #ffffff !important; border-bottom: 1px solid var(--border) !important; padding: 16px 20px;">
+                <p class="modal-card-title has-text-weight-bold" style="color: var(--text) !important; font-size: 15px;" id="modal-title-text">Agregar Caso de Prueba a la Suite</p>
+                <button class="delete" type="button" aria-label="close" onclick="closeModal()"></button>
+            </header>
+            <section class="modal-card-body" style="background: #ffffff !important; padding: 20px; color: var(--text) !important;">
+                <!-- Campo ID oculto para edición -->
+                <input type="hidden" id="edit-case-id" value="">
+                
+                <!-- Mensaje de error interno del modal -->
+                <div id="modal-error-message" class="notification is-danger is-light p-2 mb-3" style="display: none; font-size: 12px; border-radius: 6px; font-family: var(--mono); white-space: pre-wrap;"></div>
+
+                <div class="field mb-4">
+                    <label class="label" style="color: var(--text2) !important; font-size: 12px;">Nombre de la Prueba</label>
+                    <div class="control">
+                        <input class="input" type="text" id="new-case-name" placeholder="Ej: Suma con decimales" style="border-radius: 6px; font-size: 13px; background: #ffffff !important; color: #1f2933 !important; border: 1px solid var(--border) !important;">
+                    </div>
+                </div>
+
+                <div class="field mb-4">
+                    <label class="label" style="color: var(--text2) !important; font-size: 12px;">Categoría</label>
+                    <div class="control">
+                        <div class="select is-fullwidth" style="font-size: 13px;">
+                            <select id="new-case-category" style="border-radius: 6px; background: #ffffff !important; color: #1f2933 !important; border: 1px solid var(--border) !important;">
+                                <option value="Programas Válidos">Programas Válidos</option>
+                                <option value="Errores Léxicos">Errores Léxicos</option>
+                                <option value="Errores Sintácticos">Errores Sintácticos</option>
+                                <option value="Errores Semánticos">Errores Semánticos</option>
+                                <option value="Errores en Tiempo de Ejecución">Errores en Tiempo de Ejecución</option>
+                                <option value="Personalizados" selected>Personalizados</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label" style="color: var(--text2) !important; font-size: 12px;">Código Fuente</label>
+                    <div class="control">
+                        <textarea class="textarea" id="new-case-code" placeholder="let x = 5..." rows="6" style="border-radius: 6px; font-family: var(--mono); font-size: 12px; height: 160px; background: #ffffff !important; color: #1f2933 !important; border: 1px solid var(--border) !important;"></textarea>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot" style="background: #fbfcfd !important; border-top: 1px solid var(--border) !important; padding: 12px 20px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="button is-small" type="button" onclick="closeModal()" style="border-radius: 6px; font-size: 12px; background: #ffffff !important; color: #1f2933 !important; border: 1px solid var(--border) !important;">Cancelar</button>
+                <button class="button is-link is-small" type="button" id="btn-save-new-case" style="border-radius: 6px; font-size: 12px; background-color: var(--accent) !important;">Guardar Prueba</button>
+            </footer>
+        </div>
+    </div>
+    
+    <!-- Modal Confirmar Eliminación -->
+    <div class="modal" id="delete-suite-modal">
+        <div class="modal-background" onclick="closeDeleteModal()"></div>
+        <div class="modal-card" style="border-radius: var(--radius); overflow: hidden; max-width: 400px; width: 90%;">
+            <header class="modal-card-head" style="background: #ffffff !important; border-bottom: 1px solid var(--border) !important; padding: 16px 20px;">
+                <p class="modal-card-title has-text-weight-bold" style="color: var(--text) !important; font-size: 15px;">Confirmar Eliminación</p>
+                <button class="delete" type="button" aria-label="close" onclick="closeDeleteModal()"></button>
+            </header>
+            <section class="modal-card-body" style="background: #ffffff !important; padding: 20px; color: var(--text) !important;">
+                <p style="font-size: 13px;">¿Estás seguro de que deseas eliminar este caso de prueba de la suite? Esta acción no se puede deshacer.</p>
+            </section>
+            <footer class="modal-card-foot" style="background: #fbfcfd !important; border-top: 1px solid var(--border) !important; padding: 12px 20px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="button is-small" type="button" onclick="closeDeleteModal()" style="border-radius: 6px; font-size: 12px; background: #ffffff !important; color: #1f2933 !important; border: 1px solid var(--border) !important;">Cancelar</button>
+                <button class="button is-danger is-small" type="button" id="btn-confirm-delete" style="border-radius: 6px; font-size: 12px; background-color: var(--red) !important; color: #ffffff !important; font-weight: 700;">Eliminar</button>
+            </footer>
+        </div>
+    </div>
 </body>
 </html>
