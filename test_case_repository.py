@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -193,7 +193,7 @@ class TestCaseRepository:
             data = doc.to_dict()
             data["id"] = doc.id
             cases.append(self.sanitize_for_json(data))
-        cases.sort(key=lambda x: x.get("created_at") or x.get("created_at_local") or "", reverse=True)
+        cases.sort(key=lambda x: x.get("created_at_local") or x.get("created_at") or "", reverse=True)
         return cases
 
     def save_suite_case(self, name, category, code):
@@ -377,13 +377,18 @@ class TestCaseRepository:
             }
         ]
 
+        base_time = datetime.now()
         batch = self.db.batch()
-        for case in default_cases:
+        for idx, case in enumerate(default_cases):
             doc_ref = self.suite_collection.document()
+            # Descending order sorting (reverse=True) is used.
+            # So the first case (idx=0) should have the newest timestamp (base_time),
+            # and subsequent cases will have older timestamps (base_time - seconds).
+            case_time = base_time - timedelta(seconds=idx)
             case_data = {
                 **case,
                 "created_at": firestore.SERVER_TIMESTAMP,
-                "created_at_local": datetime.now().isoformat()
+                "created_at_local": case_time.isoformat()
             }
             batch.set(doc_ref, case_data)
         batch.commit()
