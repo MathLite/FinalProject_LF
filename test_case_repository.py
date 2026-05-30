@@ -216,162 +216,163 @@ class TestCaseRepository:
             return
 
         default_cases = [
+            # Programas Válidos
             {
-                "name": "Precedencia Mixta",
+                "name": "Fibonacci Recursivo con Evaluación de Tipos",
                 "category": "Programas Válidos",
-                "code": "print((3 + 4 * 2) / (1 - 5)^2)",
+                "code": "def fib(n) {\n    if n <= 1 {\n        return n\n    }\n    return fib(n - 1) + fib(n - 2)\n}\nprint(fib(7))",
                 "is_default": True
             },
             {
-                "name": "Factorial Recursivo",
+                "name": "Algoritmo de Euclides (MCD) y Modulo",
                 "category": "Programas Válidos",
-                "code": "def factorial(n) {\n    if n <= 1 {\n        return 1\n    }\n    return n * factorial(n - 1)\n}\nprint(factorial(5))",
+                "code": "def mcd(a, b) {\n    while b != 0 {\n        let temp = b\n        let b = a % b\n        let a = temp\n    }\n    return a\n}\nprint(mcd(48, 18))",
                 "is_default": True
             },
             {
-                "name": "Ciclo Acumulador (1 a n)",
+                "name": "Verificación de Números Primos y Retorno Temprano",
                 "category": "Programas Válidos",
-                "code": "let n = 10\nlet suma = 0\nlet i = 1\nwhile i <= n {\n    let suma = suma + i\n    let i = i + 1\n}\nprint(suma)",
+                "code": "def es_primo(n) {\n    if n <= 1 {\n        return false\n    }\n    let i = 2\n    while i * i <= n {\n        if n % i == 0 {\n            return false\n        }\n        let i = i + 1\n    }\n    return true\n}\nprint(es_primo(17))",
                 "is_default": True
             },
             {
-                "name": "Funciones Trigonométricas y Matemáticas",
+                "name": "Cálculos Trigonométricos y Matemáticos Aninados",
                 "category": "Programas Válidos",
-                "code": "let x = sin(0.5) * cos(0.5) + sqrt(16)\nprint(x)",
+                "code": "let a = abs(-10.5)\nlet b = floor(a)\nlet c = ceil(a)\nlet val = log(sqrt(b^2 + c^2))\nprint(val)",
                 "is_default": True
             },
             {
-                "name": "Llamadas entre funciones",
+                "name": "Evaluación Compleja de Booleanos y Cortocircuito",
                 "category": "Programas Válidos",
-                "code": "def duplicar(x) {\n    return x * 2\n}\ndef procesar(n) {\n    return duplicar(n) + 10\n}\nprint(procesar(5))",
-                "is_default": True
-            },
-            {
-                "name": "Definiciones y Aritmética Simple",
-                "category": "Programas Válidos",
-                "code": "let a = 15\nlet b = 30\nprint(a + b)",
-                "is_default": True
-            },
-            {
-                "name": "Comparaciones Lógicas",
-                "category": "Programas Válidos",
-                "code": "let edad = 20\nlet puede_votar = edad >= 18 and true\nprint(puede_votar)",
-                "is_default": True
-            },
-            {
-                "name": "Cálculo de Área de Círculo",
-                "category": "Programas Válidos",
-                "code": "let pi = 3.14159\nlet r = 5\nlet area = pi * r^2\nprint(area)",
+                "code": "let x = 10\nlet y = 20\nlet cond1 = x < y and not (x == 10) or y >= 20\nlet cond2 = (x + y == 30) and (true or false)\nif cond1 and cond2 {\n    print(\"Expresion valida\")\n}",
                 "is_default": True
             },
 
             # Errores Léxicos
             {
-                "name": "Carácter inválido (@)",
+                "name": "Cadena sin comilla de cierre en bloque",
                 "category": "Errores Léxicos",
-                "code": "let x = 10 @ 5",
+                "code": "def test() {\n    let x = \"cadena sin terminar\n}",
                 "is_default": True
             },
             {
-                "name": "Carácter inválido (#)",
+                "name": "Carácter inválido (@) en aritmética",
                 "category": "Errores Léxicos",
-                "code": "let y = # 100",
+                "code": "let a = 10 + 20 @ 3",
                 "is_default": True
             },
             {
-                "name": "Cadena sin comilla de cierre",
+                "name": "Carácter no soportado (#) en declaración",
                 "category": "Errores Léxicos",
-                "code": "let str = \"cadena sin terminar",
+                "code": "def calcular#area(r) {\n    return 3.14 * r^2\n}",
                 "is_default": True
             },
             {
-                "name": "Carácter inválido (?)",
+                "name": "Identificador con prefijo inválido ($)",
                 "category": "Errores Léxicos",
-                "code": "let x = ?",
+                "code": "let $variable = 100",
                 "is_default": True
             },
             {
-                "name": "Identificador inválido ($)",
+                "name": "Símbolos no permitidos ([) al final del bloque",
                 "category": "Errores Léxicos",
-                "code": "let $val = 5",
+                "code": "let x = 10\nlet y = 20 [",
                 "is_default": True
             },
 
             # Errores Sintácticos
             {
-                "name": "Paréntesis sin cerrar",
+                "name": "Paréntesis desbalanceados en función integrada",
                 "category": "Errores Sintácticos",
-                "code": "let x = (3 + 4 * 2",
+                "code": "let x = sin(cos(3.14)",
                 "is_default": True
             },
             {
-                "name": "Función sin llaves de bloque",
+                "name": "Definición de función sin cuerpo o llaves",
                 "category": "Errores Sintácticos",
-                "code": "def suma(a, b)\n    return a + b",
+                "code": "def duplicar(x)\n    return x * 2",
                 "is_default": True
             },
             {
-                "name": "Sentencia if sin condición",
+                "name": "Operador binario sin operando derecho",
                 "category": "Errores Sintácticos",
-                "code": "if {\n    print(\"hola\")\n}",
+                "code": "let x = 10 + (20 * )",
                 "is_default": True
             },
             {
-                "name": "Declaración let sin asignación",
+                "name": "Bucle while sin llaves ni bloque",
                 "category": "Errores Sintácticos",
-                "code": "let x",
+                "code": "while x < 10",
                 "is_default": True
             },
             {
-                "name": "Ciclo while sin llaves de bloque",
+                "name": "Sentencia else huérfana sin bloque if",
                 "category": "Errores Sintácticos",
-                "code": "while true\n    print(\"bucle\")",
+                "code": "else {\n    print(\"error\")\n}",
                 "is_default": True
             },
 
             # Errores Semánticos
-            {
-                "name": "Variable no declarada",
-                "category": "Errores Semánticos",
-                "code": "print(x)",
-                "is_default": True
-            },
-            {
-                "name": "Aridad incorrecta de argumentos",
-                "category": "Errores Semánticos",
-                "code": "def suma(a, b) {\n    return a + b\n}\nprint(suma(5))",
-                "is_default": True
-            },
-            {
-                "name": "Tipos incompatibles (+)",
-                "category": "Errores Semánticos",
-                "code": "let res = \"hola\" + 5",
-                "is_default": True
-            },
-            {
-                "name": "Return fuera de función",
-                "category": "Errores Semánticos",
-                "code": "let valor = 10\nreturn valor",
-                "is_default": True
-            },
             {
                 "name": "Redeclaración de variable en el mismo bloque",
                 "category": "Errores Semánticos",
                 "code": "let x = 10\nlet x = 20",
                 "is_default": True
             },
-
-            # Errores de Ejecución
             {
-                "name": "División por cero",
-                "category": "Errores en Tiempo de Ejecución",
-                "code": "let r = 10 / 0",
+                "name": "Sentencia return fuera del cuerpo de función",
+                "category": "Errores Semánticos",
+                "code": "let x = 10\nreturn x",
                 "is_default": True
             },
             {
-                "name": "Llamada a función no definida",
+                "name": "Suma inválida de tipos incompatibles (Cadena + Entero)",
+                "category": "Errores Semánticos",
+                "code": "let x = \"hola\" + 10",
+                "is_default": True
+            },
+            {
+                "name": "Llamada a función con número incorrecto de argumentos",
+                "category": "Errores Semánticos",
+                "code": "def suma(a, b) {\n    return a + b\n}\nlet res = suma(1, 2, 3)",
+                "is_default": True
+            },
+            {
+                "name": "Variable no declarada en condición de bucle",
+                "category": "Errores Semánticos",
+                "code": "while variable_inexistente < 10 {\n    print(1)\n}",
+                "is_default": True
+            },
+
+            # Errores de Ejecución
+            {
+                "name": "División por cero explícita",
                 "category": "Errores en Tiempo de Ejecución",
-                "code": "print(funcion_inexistente(10))",
+                "code": "let resultado = 100 / 0",
+                "is_default": True
+            },
+            {
+                "name": "División por cero con variable dinámica",
+                "category": "Errores en Tiempo de Ejecución",
+                "code": "let x = 10 - 10\nlet y = 50 / x",
+                "is_default": True
+            },
+            {
+                "name": "Módulo por cero en expresión matemática",
+                "category": "Errores en Tiempo de Ejecución",
+                "code": "let res = 15 % (3 * 0)",
+                "is_default": True
+            },
+            {
+                "name": "Bucle infinito por límite de iteraciones",
+                "category": "Errores en Tiempo de Ejecución",
+                "code": "while true {\n    let x = 1\n}",
+                "is_default": True
+            },
+            {
+                "name": "Raíz cuadrada de número negativo (Error de dominio)",
+                "category": "Errores en Tiempo de Ejecución",
+                "code": "let x = sqrt(-9)",
                 "is_default": True
             }
         ]
