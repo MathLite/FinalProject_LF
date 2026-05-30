@@ -30,6 +30,15 @@ class Environment:
     def define(self, name, value):
         self.values[name] = value
 
+    def exists(self, name):
+        if name in self.values:
+            return True
+
+        if self.parent is not None:
+            return self.parent.exists(name)
+
+        return False
+
     def assign(self, name, value):
         if name in self.values:
             self.values[name] = value
@@ -40,6 +49,12 @@ class Environment:
             return
 
         raise RuntimeError("La variable '{}' no está definida.".format(name))
+
+    def define_or_assign(self, name, value):
+        if self.exists(name):
+            self.assign(name, value)
+        else:
+            self.define(name, value)
 
     def get(self, name):
         if name in self.values:
@@ -71,9 +86,15 @@ class Interpreter:
             "ceil": math.ceil,
         }
 
-    def interpret(self, ast):
+    def reset_runtime_state(self):
+        self.global_env = Environment()
+        self.current_env = self.global_env
+        self.functions = {}
         self.output = []
         self.errors = []
+
+    def interpret(self, ast):
+        self.reset_runtime_state()
 
         try:
             self.visit(ast)
@@ -120,9 +141,14 @@ class Interpreter:
 
     def visit_VarDeclNode(self, node):
         value = self.visit(node.value)
-        self.current_env.define(node.name, value)
+        self.current_env.define_or_assign(node.name, value)
         return value
-    
+
+    def visit_AssignNode(self, node):
+        value = self.visit(node.value)
+        self.current_env.assign(node.name, value)
+        return value
+
     def visit_PrintNode(self, node):
         value = self.visit(node.expression)
         self.output.append(self.format_value(value))
@@ -347,8 +373,9 @@ class Interpreter:
         except ReturnSignal as return_signal:
             self.current_env = previous_env
             return return_signal.value
+        finally:
+            self.current_env = previous_env
 
-        self.current_env = previous_env
         return None
 
     # =========================
