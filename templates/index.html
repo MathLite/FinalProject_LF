@@ -972,10 +972,12 @@
     Cada fase se evalúa de forma independiente.
     El runner puede continuar acumulando errores aunque una fase anterior haya fallado.
 #}
+
 {% set lexical_done = result is not none %}
-{% set syntax_done = result is not none %}
-{% set semantic_done = result is not none and result.ast %}
-{% set runtime_done = result is not none and result.ast %}
+{% set syntax_done = result and result.syntax_executed %}
+{% set semantic_done = result and result.semantic_executed %}
+{% set runtime_done = result and result.runtime_executed %}
+{% set ast_diagnostic = result and result.ast_diagnostic %}
 
 <body data-auto-tab="{% if result and total_error_count > 0 %}errors{% else %}output{% endif %}">
     <header class="mathlite-header">
@@ -1113,6 +1115,18 @@
                                 </div>
                             </article>
                         {% endif %}
+                        
+
+                        {% if result and not result.runtime_executed and result.runtime_skipped_reason %}
+                            <article class="message is-small neutral-message">
+                                <div class="message-header">
+                                    <p>Salida no generada</p>
+                                </div>
+                                <div class="message-body">
+                                    {{ result.runtime_skipped_reason }}
+                                </div>
+                            </article>
+                        {% endif %}
 
                         {% if result.output %}
                             <div class="box output-console">
@@ -1147,8 +1161,7 @@
                                 {% endif %}
                             </button>
 
-                            <button class="button is-small diag-btn" type="button" data-diag="syntax">
-                                Sintáctico
+                            <button class="button is-small diag-btn {% if not syntax_done %}not-run{% endif %}" type="button" data-diag="syntax">                                Sintáctico
                                 {% if result.syntax_errors %}
                                     <span class="tag is-danger is-light is-rounded ml-2">{{ result.syntax_errors|length }}</span>
                                 {% endif %}
@@ -1161,8 +1174,7 @@
                                 {% endif %}
                             </button>
 
-                            <button class="button is-small diag-btn {% if not runtime_done %}not-run{% endif %}" type="button" data-diag="runtime">
-                                Ejecución
+                            <button class="button is-small diag-btn {% if not runtime_done %}not-run{% endif %}" type="button" data-diag="runtime" {% if not runtime_done %}aria-disabled="true"{% endif %}>                                Ejecución
                                 {% if result.runtime_errors %}
                                     <span class="tag is-danger is-light is-rounded ml-2">{{ result.runtime_errors|length }}</span>
                                 {% endif %}
@@ -1194,7 +1206,17 @@
                         </div>
 
                         <div class="diag-content" id="diag-syntax">
-                            {% if result.syntax_errors %}
+                            {% if not syntax_done %}
+                                <article class="message is-small neutral-message">
+                                    <div class="message-header">
+                                        <p>Análisis sintáctico no realizado</p>
+                                    </div>
+                                    <div class="message-body">
+                                        El análisis sintáctico no se ejecutó porque existen errores léxicos.
+                                        Corrige primero los tokens inválidos para continuar con esta fase.
+                                    </div>
+                                </article>
+                            {% elif result.syntax_errors %}
                                 {% for e in result.syntax_errors %}
                                     <article class="message is-danger is-small">
                                         <div class="message-header">
@@ -1251,15 +1273,22 @@
                         </div>
 
                         <div class="diag-content" id="diag-runtime">
+                            
                             {% if not runtime_done %}
                                 <article class="message is-small neutral-message">
                                     <div class="message-header">
                                         <p>Ejecución no realizada</p>
                                     </div>
                                     <div class="message-body">
-                                        No se ejecutó el programa porque no se generó un AST válido.
+                                        {% if result.runtime_skipped_reason %}
+                                            {{ result.runtime_skipped_reason }}
+                                        {% else %}
+                                            La ejecución no se realizó porque el programa no superó las fases previas de análisis.
+                                        {% endif %}
                                     </div>
                                 </article>
+
+
                             {% elif result.runtime_errors %}
                                 {% for e in result.runtime_errors %}
                                     <article class="message is-danger is-small">
@@ -1290,11 +1319,29 @@
                     </div>
                 {% endif %}
             </div>
-
+            
             <div class="tab-content" id="tab-ast">
                 {% if result and result.ast %}
                     <div class="ast-panel">
+
+                        {% if ast_diagnostic %}
+                            <article class="message is-small neutral-message" style="margin: 14px 16px 0 16px;">
+                                <div class="message-header">
+                                    <p>AST de diagnóstico</p>
+                                </div>
+                                <div class="message-body">
+                                    {% if result.ast_message %}
+                                        {{ result.ast_message }}
+                                    {% else %}
+                                        El árbol fue generado durante la recuperación de errores sintácticos.
+                                        Puede representar únicamente las partes correctamente reconocidas del programa.
+                                    {% endif %}
+                                </div>
+                            </article>
+                        {% endif %}
+
                         <div class="ast-toolbar">
+                            
                             <button class="button is-small ast-view-btn active" type="button" id="btn-visual">Vista gráfica</button>
                             <button class="button is-small ast-view-btn" type="button" id="btn-text">Vista plana</button>
                         </div>
@@ -1621,7 +1668,7 @@ null
                                     <p>Caso de prueba cargado</p>
                                 </div>
                                 <div class="message-body">
-                                    El programa fue cargado en el editor. Preciona el botón de <strong>Analizar programa</strong> para ver los resultados.
+                                    El programa fue cargado en el editor. Selecciona <strong>Analizar programa</strong> para ver los resultados.
                                 </div>
                             </article>
                         </div>
