@@ -9,7 +9,7 @@ from firebase_admin import credentials, firestore
 class TestCaseRepository:
     def __init__(self):
         if not firebase_admin._apps:
-            firebase_key_env = os.environ.get("FIREBASE_KEY_JSON")
+            firebase_key_env = os.environ.get("FIREBASE_KEY_JSON") or os.environ.get("FIREBASE_CREDENTIALS_JSON")
             if firebase_key_env:
                 try:
                     cred_dict = json.loads(firebase_key_env)
@@ -36,7 +36,7 @@ class TestCaseRepository:
                 )
                 if not os.path.exists(credential_path):
                     raise FileNotFoundError(
-                        "No se encontró el archivo firebase_key.json y tampoco está la variable FIREBASE_KEY_JSON."
+                        "No se encontró el archivo firebase_key.json y tampoco está la variable FIREBASE_KEY_JSON ni FIREBASE_CREDENTIALS_JSON."
                     )
                 cred = credentials.Certificate(credential_path)
 

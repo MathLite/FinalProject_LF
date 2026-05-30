@@ -6,7 +6,7 @@ from firebase_admin import firestore
 
 def initialize_firebase():
     if not firebase_admin._apps:
-        firebase_key_env = os.environ.get("FIREBASE_KEY_JSON")
+        firebase_key_env = os.environ.get("FIREBASE_KEY_JSON") or os.environ.get("FIREBASE_CREDENTIALS_JSON")
         
         if firebase_key_env:
             try:
