@@ -39,7 +39,7 @@ class SymbolTable:
 
     def is_global_scope(self):
         return len(self.scopes) == 1
-
+    
 
 class SemanticError(Exception):
     pass
@@ -111,12 +111,8 @@ class SemanticAnalyzer:
             self.visit(stmt)
 
     def visit_BlockNode(self, node):
-        self.symbol_table.enter_scope("block")
-
         for stmt in node.statements:
             self.visit(stmt)
-
-        self.symbol_table.exit_scope()
 
     # =========================
     # DECLARACIONES
@@ -168,7 +164,7 @@ class SemanticAnalyzer:
         self.in_function = True
 
         self.symbol_table.enter_scope("function")
-        
+
         for param_name in node.params:
             if self.symbol_table.current_scope_contains(param_name):
                 self.report_error(
