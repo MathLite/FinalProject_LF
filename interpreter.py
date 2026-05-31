@@ -30,6 +30,9 @@ class Environment:
     def define(self, name, value):
         self.values[name] = value
 
+    def current_contains(self, name):
+        return name in self.values
+
     def exists(self, name):
         if name in self.values:
             return True
@@ -141,7 +144,11 @@ class Interpreter:
 
     def visit_VarDeclNode(self, node):
         value = self.visit(node.value)
+
+        # La validación de redeclaración en el mismo alcance se hace en semántica.
+        # En ejecución, let declara si no existe o actualiza si ya existe en algún entorno.
         self.current_env.define_or_assign(node.name, value)
+
         return value
 
     def visit_AssignNode(self, node):
@@ -407,7 +414,7 @@ class Interpreter:
     # =========================
 
     def is_number(self, value):
-        return isinstance(value, int) or isinstance(value, float)
+        return (isinstance(value, int) or isinstance(value, float)) and not isinstance(value, bool)
 
     def validate_number(self, value, message):
         if not self.is_number(value):

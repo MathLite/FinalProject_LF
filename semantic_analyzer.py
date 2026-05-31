@@ -109,24 +109,47 @@ class SemanticAnalyzer:
     def visit_VarDeclNode(self, node):
         value_type = self.visit(node.value)
 
-        existing_symbol = self.symbol_table.lookup(node.name)
+        if self.symbol_table.current_scope_contains(node.name):
+            current_symbol = self.symbol_table.lookup(node.name)
 
-        if existing_symbol is not None:
-            if existing_symbol.get("kind") in ["VAR", "PARAM"]:
-                existing_symbol["type"] = value_type
+            if current_symbol is not None and current_symbol.get("kind") in ["VAR", "PARAM"]:
+                self.report_error(
+                    "REDECLARED_VAR",
+                    "La variable '{}' ya fue declarada en este mismo alcance.".format(node.name),
+                    node.line
+                )
             else:
                 self.report_error(
                     "INVALID_REDECLARATION",
-                    "El nombre '{}' ya existe y no puede usarse como variable.".format(node.name),
+                    "El nombre '{}' ya existe en este alcance y no puede usarse como variable.".format(node.name),
                     node.line
                 )
-                node.eval_type = "ERROR"
-                return "ERROR"
-        else:
-            self.symbol_table.define(node.name, {
-                "type": value_type,
-                "kind": "VAR"
-            })
+
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        existing_symbol = self.symbol_table.lookup(node.name)
+
+        if existing_symbol is not None:
+            existing_kind = existing_symbol.get("kind")
+
+            if existing_kind in ["VAR", "PARAM"]:
+                existing_symbol["type"] = value_type
+                node.eval_type = value_type
+                return value_type
+
+            self.report_error(
+                "INVALID_REDECLARATION",
+                "El nombre '{}' ya existe y no puede usarse como variable.".format(node.name),
+                node.line
+            )
+            node.eval_type = "ERROR"
+            return "ERROR"
+
+        self.symbol_table.define(node.name, {
+            "type": value_type,
+            "kind": "VAR"
+        })
 
         node.eval_type = value_type
         return value_type
