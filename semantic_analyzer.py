@@ -1,13 +1,16 @@
 class SymbolTable:
     def __init__(self):
         self.scopes = [{}]
+        self.scope_types = ["global"]
 
-    def enter_scope(self):
+    def enter_scope(self, scope_type="block"):
         self.scopes.append({})
+        self.scope_types.append(scope_type)
 
     def exit_scope(self):
         if len(self.scopes) > 1:
             self.scopes.pop()
+            self.scope_types.pop()
 
     def define(self, name, symbol_info):
         self.scopes[-1][name] = symbol_info
@@ -16,6 +19,19 @@ class SymbolTable:
         for scope in reversed(self.scopes):
             if name in scope:
                 return scope[name]
+
+        return None
+
+    def lookup_for_assignment(self, name):
+        for index in range(len(self.scopes) - 1, -1, -1):
+            scope = self.scopes[index]
+
+            if name in scope:
+                return scope[name]
+
+            if self.scope_types[index] == "function":
+                break
+
         return None
 
     def current_scope_contains(self, name):
@@ -95,7 +111,7 @@ class SemanticAnalyzer:
             self.visit(stmt)
 
     def visit_BlockNode(self, node):
-        self.symbol_table.enter_scope()
+        self.symbol_table.enter_scope("block")
 
         for stmt in node.statements:
             self.visit(stmt)
@@ -109,24 +125,26 @@ class SemanticAnalyzer:
     def visit_VarDeclNode(self, node):
         value_type = self.visit(node.value)
 
-        existing_symbol = self.symbol_table.lookup(node.name)
+        target_symbol = self.symbol_table.lookup_for_assignment(node.name)
 
-        if existing_symbol is not None:
-            if existing_symbol.get("kind") in ["VAR", "PARAM"]:
-                existing_symbol["type"] = value_type
-            else:
+        if target_symbol is not None:
+            if target_symbol.get("type") == "FUNC":
                 self.report_error(
                     "INVALID_REDECLARATION",
-                    "El nombre '{}' ya existe y no puede usarse como variable.".format(node.name),
+                    "El nombre '{}' corresponde a una función y no puede usarse como variable.".format(node.name),
                     node.line
                 )
                 node.eval_type = "ERROR"
                 return "ERROR"
-        else:
-            self.symbol_table.define(node.name, {
-                "type": value_type,
-                "kind": "VAR"
-            })
+
+            target_symbol["type"] = value_type
+            node.eval_type = value_type
+            return value_type
+
+        self.symbol_table.define(node.name, {
+            "type": value_type,
+            "kind": "VAR"
+        })
 
         node.eval_type = value_type
         return value_type
@@ -149,8 +167,8 @@ class SemanticAnalyzer:
         previous_in_function = self.in_function
         self.in_function = True
 
-        self.symbol_table.enter_scope()
-
+        self.symbol_table.enter_scope("function")
+        
         for param_name in node.params:
             if self.symbol_table.current_scope_contains(param_name):
                 self.report_error(

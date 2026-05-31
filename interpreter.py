@@ -23,38 +23,44 @@ class ReturnSignal(Exception):
 
 
 class Environment:
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, is_function_scope=False):
         self.values = {}
         self.parent = parent
+        self.is_function_scope = is_function_scope
 
     def define(self, name, value):
         self.values[name] = value
 
-    def exists(self, name):
-        if name in self.values:
-            return True
+    def find_for_assignment(self, name):
+        env = self
 
-        if self.parent is not None:
-            return self.parent.exists(name)
+        while env is not None:
+            if name in env.values:
+                return env
 
-        return False
+            if env.is_function_scope:
+                break
+
+            env = env.parent
+
+        return None
+
+    def define_or_assign(self, name, value):
+        target_env = self.find_for_assignment(name)
+
+        if target_env is not None:
+            target_env.values[name] = value
+        else:
+            self.define(name, value)
 
     def assign(self, name, value):
-        if name in self.values:
-            self.values[name] = value
-            return
+        target_env = self.find_for_assignment(name)
 
-        if self.parent is not None:
-            self.parent.assign(name, value)
+        if target_env is not None:
+            target_env.values[name] = value
             return
 
         raise RuntimeError("La variable '{}' no está definida.".format(name))
-
-    def define_or_assign(self, name, value):
-        if self.exists(name):
-            self.assign(name, value)
-        else:
-            self.define(name, value)
 
     def get(self, name):
         if name in self.values:
@@ -64,7 +70,6 @@ class Environment:
             return self.parent.get(name)
 
         raise RuntimeError("La variable '{}' no está definida.".format(name))
-
 
 class Interpreter:
     def __init__(self):
@@ -360,8 +365,8 @@ class Interpreter:
             )
 
         previous_env = self.current_env
-        local_env = Environment(parent=self.global_env)
-
+        local_env = Environment(parent=self.global_env, is_function_scope=True)
+        
         for index in range(len(function_node.params)):
             param_name = function_node.params[index]
             local_env.define(param_name, arguments[index])
