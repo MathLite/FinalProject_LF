@@ -1240,6 +1240,19 @@
                         </div>
 
                         <div class="diag-content" id="diag-semantic">
+
+                            {% if result and syntax_count > 0 and semantic_done %}
+                                <article class="message is-small neutral-message">
+                                    <div class="message-header">
+                                        <p>Análisis semántico sobre AST de diagnóstico</p>
+                                    </div>
+                                    <div class="message-body">
+                                        El análisis semántico se realizó únicamente sobre los nodos disponibles del AST de recuperación.
+                                        Este analisis no representa una validación completa de todo el programa.
+                                    </div>
+                                </article>
+                            {% endif %}
+
                             {% if not semantic_done %}
                                 <article class="message is-small neutral-message">
                                     <div class="message-header">
@@ -1266,7 +1279,7 @@
                                         <p>Sin errores semánticos</p>
                                     </div>
                                     <div class="message-body">
-                                        Las variables, funciones y tipos fueron validados correctamente.
+                                        No se encontraron errores semánticos en los nodos analizados.
                                     </div>
                                 </article>
                             {% endif %}
