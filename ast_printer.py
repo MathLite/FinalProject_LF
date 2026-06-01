@@ -1,6 +1,20 @@
 from ASTNode import *
 
 
+
+"""
+Este módulo contiene funciones auxiliares para visualizar el Árbol de Sintaxis
+Abstracta (AST) generado por el parser. Su objetivo es mostrar una representación
+legible de los nodos del árbol, útil para depuración, validación y presentación
+de resultados en la aplicación web.
+
+Funciones principales:
+- print_ast(): imprime el AST desde su nodo raíz.
+- print_node(): identifica el tipo de nodo y muestra su contenido.
+- print_indent(): aplica sangría para representar visualmente la jerarquía.
+- Métodos auxiliares específicos por tipo de nodo, cuando corresponda.
+
+"""
 def print_ast(node, indent=0):
     space = "    " * indent
 

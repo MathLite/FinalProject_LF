@@ -6,6 +6,27 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 
+"""
+Módulo: test_case_repository.py
+
+Este módulo centraliza la comunicación con Firebase Firestore para almacenar,
+consultar, actualizar y eliminar casos de prueba del proyecto MathLite.
+
+Su propósito es separar la lógica de persistencia de datos de la aplicación web.
+De esta manera, Flask no necesita conocer directamente los detalles de conexión
+con Firebase, sino que utiliza esta clase como una capa intermedia.
+
+Funciones principales:
+- save_test_case(): guarda un caso ejecutado por el usuario.
+- get_all_test_cases(): obtiene el historial de casos almacenados.
+- get_test_case_by_id(): recupera un caso específico por identificador.
+- get_test_suite(): obtiene la suite de casos de prueba.
+- save_suite_case(): agrega un nuevo caso a la suite.
+- update_suite_case(): actualiza un caso existente.
+- delete_suite_case(): elimina un caso de la suite.
+- seed_default_suite_if_empty(): carga casos iniciales si la colección está vacía.
+"""
+
 class TestCaseRepository:
     def __init__(self):
         if not firebase_admin._apps:

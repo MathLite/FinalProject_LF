@@ -9,6 +9,26 @@ from interpreter import Interpreter, MathLiteRuntimeError, RuntimeErrorInfo
 from ASTNode import ProgramNode, ExprStmtNode
 
 
+"""
+Este módulo implementa la interfaz web de MathLite mediante Flask. Permite que
+el usuario escriba código fuente, lo envíe al sistema de análisis y visualice
+los resultados producidos por cada fase del intérprete.
+
+La aplicación muestra tokens, errores léxicos, errores sintácticos, errores
+semánticos, errores en tiempo de ejecución, AST, salida del programa y fase
+final alcanzada. También puede incluir una suite de casos de prueba para validar
+el comportamiento del lenguaje.
+
+Funciones y rutas principales:
+- index(): renderiza la página principal y procesa el código enviado.
+- /api/test-suite: permite consultar o administrar casos de prueba locales.
+- /api/repl: permite evaluar fragmentos de código en modo interactivo.
+- /api/repl/reset: reinicia el entorno del REPL.
+- run_code(): función externa llamada para ejecutar el flujo completo.
+"""
+
+
+
 app = Flask(__name__)
 repository = TestCaseRepository()
 repository.seed_default_suite_if_empty()

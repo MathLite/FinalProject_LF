@@ -8,6 +8,21 @@ import io
 import sys
 
 
+
+"""
+
+El runner recibe el código fuente desde la aplicación web, ejecuta las fases
+en el orden correspondiente y retorna un diccionario con tokens, errores,
+AST, salida del programa, estado de éxito y fase final alcanzada.
+
+Funciones principales:
+- run_code(): ejecuta el flujo completo de análisis y ejecución.
+- format_tokens(): transforma los tokens en una estructura serializable.
+- format_lexical_errors(): formatea los errores léxicos.
+- format_runtime_errors(): formatea los errores en tiempo de ejecución.
+- get_ast_as_text(): obtiene una representación textual del AST.
+- determine_phase(): determina la fase final alcanzada por el programa.
+"""
 def get_ast_as_text(ast):
     old_stdout = sys.stdout
     buffer = io.StringIO()

@@ -17,6 +17,35 @@ class LexicalError:
     column: int
     lexeme: str = ""
 
+"""
+Clase Lexer
+# ==========================================================
+#
+# Métodos principales:
+#   - tokenize():
+#       Ejecuta el análisis léxico completo y retorna la lista
+#       de tokens junto con los errores encontrados.
+#
+#   - scan_token():
+#       Analiza el carácter actual y decide qué tipo de token
+#       debe construirse.
+#
+#   - read_identifier():
+#       Reconoce identificadores y palabras reservadas.
+#
+#   - read_number():
+#       Reconoce literales numéricos enteros y reales.
+#
+#   - read_string():
+#       Reconoce cadenas de texto delimitadas por comillas.
+#
+#   - add_token():
+#       Agrega un token reconocido a la lista de salida.
+#
+#   - add_error():
+#       Registra un error léxico con línea, columna y lexema.
+
+"""
 
 class Lexer:
     def __init__(self, input):
@@ -112,7 +141,6 @@ class Lexer:
             self.move(self.input[self.position])
 
 
-    ##(ENTENDER ESTA FUNCION ES IMPORTANTE PARA COMO FUNCIONA EL LEXER)
     def regex_match(self, pattern):
         match = pattern.match(self.current_text())
 

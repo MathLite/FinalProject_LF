@@ -2,6 +2,35 @@ import math
 from ASTNode import *
 
 
+"""
+Módulo: interpreter.py
+
+Este módulo implementa el intérprete de MathLite. Su responsabilidad es recorrer
+el AST validado y ejecutar las instrucciones del programa, generando la salida
+correspondiente o reportando errores en tiempo de ejecución.
+
+El intérprete evalúa expresiones, ejecuta instrucciones, administra entornos
+de variables, controla llamadas a funciones, maneja retornos y ejecuta funciones
+integradas matemáticas como sin, cos, tan, sqrt, log, abs, floor y ceil.
+
+Clases principales:
+- Environment: administra los valores de variables en tiempo de ejecución.
+- Interpreter: ejecuta el AST y produce la salida del programa.
+- RuntimeErrorInfo: representa errores detectados durante la ejecución.
+- ReturnSignal: mecanismo interno para interrumpir la ejecución de una función
+  cuando se encuentra una instrucción return.
+
+  
+
+Funciones y métodos principales:
+- interpret(): inicia la ejecución del AST y retorna salida y errores.
+- visit(): despacha dinámicamente la ejecución según el tipo de nodo.
+- visit... todos los visis definidos por nodos
+- call_builtin_function(): ejecuta funciones matemáticas integradas.
+- format_value(): formatea valores antes de mostrarlos como salida.
+"""
+
+
 class RuntimeErrorInfo:
     def __init__(self, message, line=0):
         self.message = message
@@ -28,6 +57,23 @@ class MathLiteRuntimeError(Exception):
         self.node = node
         self.message = message
 
+
+
+
+"""
+Clase: Environment
+
+Representa un entorno de ejecución para almacenar valores de variables.
+Cada entorno contiene un diccionario de nombres y valores, y puede tener un
+entorno padre para permitir búsquedas controladas.
+
+Responsabilidades principales:
+- Definir nuevas variables.
+- Actualizar variables existentes en el contexto correspondiente.
+- Buscar valores de variables durante la ejecución.
+- Respetar la frontera de funciones para evitar que variables locales modifiquen
+  variables globales con el mismo nombre.
+"""
 
 class Environment:
     def __init__(self, parent=None, is_function_scope=False):
