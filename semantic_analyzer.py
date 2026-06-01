@@ -82,6 +82,7 @@ class SemanticAnalyzer:
         self.errors.append(error_msg)
 
     def analyze(self, node):
+        self.errors = []
         self.visit(node)
         return self.errors
 

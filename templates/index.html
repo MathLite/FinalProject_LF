@@ -1060,6 +1060,10 @@
                     {% endif %}
                 </button>
 
+                <button class="result-tab" type="button" data-tab="repl">
+                    REPL
+                </button>
+
                 <button class="result-tab" type="button" data-tab="errors">
                     Errores
                     {% if total_error_count > 0 %}
@@ -1147,6 +1151,37 @@
                             </div>
                         {% endif %}
                     {% endif %}
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-repl">
+                <div class="repl-container" style="padding: 18px 20px; display: flex; flex-direction: column; height: 100%; min-height: 0;">
+                    <div class="box repl-console" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(20, 30, 40, 0.04); margin-bottom: 12px; cursor: text;">
+                        <div class="console-header" style="height: 34px; background: #f3f5f8; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-family: var(--mono); font-size: 11px; color: var(--text2); flex-shrink: 0; user-select: none;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="console-dot" style="background: var(--accent);"></span>
+                                <span>MathLite Terminal</span>
+                            </div>
+                        </div>
+
+                        <div class="repl-terminal-body" id="repl-terminal-body" style="flex: 1; padding: 16px; font-family: var(--mono); font-size: 13px; line-height: 1.8; color: var(--text); background: #ffffff; overflow-y: auto; display: flex; flex-direction: column;">
+                            <div class="repl-history" id="repl-history"></div>
+
+                            <div class="repl-input-line" style="display: flex; align-items: center; margin-top: 4px; flex-shrink: 0;">
+                                <span style="font-family: var(--mono); font-size: 13px; font-weight: 700; color: #2f5f8f; margin-right: 8px; user-select: none;">mathlite&gt;</span>
+                                <input type="text" id="repl-input" placeholder="" style="flex: 1; background: transparent; border: none; outline: none; font-family: var(--mono); font-size: 13px; color: var(--text); padding: 0;" autocomplete="off" spellcheck="false">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="button is-small is-light" type="button" id="btn-clear-repl" style="border-radius: 999px; font-weight: 600; border: 1px solid var(--border) !important; background: #ffffff !important; color: var(--text2) !important;">
+                            Limpiar Consola
+                        </button>
+                        <button class="button is-small is-light" type="button" id="btn-reset-repl" style="border-radius: 999px; font-weight: 600; border: 1px solid #8c1d1d !important; background: #ffffff !important; color: #8c1d1d !important;">
+                            Reiniciar Entorno
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2350,6 +2385,241 @@ null
                         return d.data.name;
                     });
             }
+
+            // ==========================================
+            // LOGICA DEL REPL INTERACTIVO
+            // ==========================================
+            const replInput = document.getElementById("repl-input");
+            const replHistory = document.getElementById("repl-history");
+            const replTerminalBody = document.getElementById("repl-terminal-body");
+            const btnClearRepl = document.getElementById("btn-clear-repl");
+            const btnResetRepl = document.getElementById("btn-reset-repl");
+
+            let replSessionId = localStorage.getItem("mathlite_repl_session_id");
+            let commandHistory = [];
+            let historyIndex = -1;
+            let tempInput = "";
+
+            function saveReplState() {
+                if (replHistory) {
+                    localStorage.setItem("mathlite_repl_history_html", replHistory.innerHTML);
+                }
+                localStorage.setItem("mathlite_repl_command_history", JSON.stringify(commandHistory));
+            }
+
+            // Restaurar estado del REPL si existe en localStorage al cargar la página
+            const savedReplHistory = localStorage.getItem("mathlite_repl_history_html");
+            if (savedReplHistory && replHistory) {
+                replHistory.innerHTML = savedReplHistory;
+                if (replTerminalBody) {
+                    setTimeout(() => {
+                        replTerminalBody.scrollTop = replTerminalBody.scrollHeight;
+                    }, 50);
+                }
+            }
+
+            const savedCommandHistory = localStorage.getItem("mathlite_repl_command_history");
+            if (savedCommandHistory) {
+                try {
+                    commandHistory = JSON.parse(savedCommandHistory);
+                } catch (e) {
+                    commandHistory = [];
+                }
+            }
+
+            function appendToHistory(type, content) {
+                const lineDiv = document.createElement("div");
+                lineDiv.style.marginBottom = "6px";
+                lineDiv.style.wordBreak = "break-all";
+                lineDiv.style.whiteSpace = "pre-wrap";
+                lineDiv.style.fontSize = "13px";
+
+                if (type === "input") {
+                    const promptSpan = document.createElement("span");
+                    promptSpan.style.color = "#2f5f8f";
+                    promptSpan.style.fontWeight = "700";
+                    promptSpan.style.marginRight = "8px";
+                    promptSpan.textContent = "mathlite> ";
+
+                    const codeSpan = document.createElement("span");
+                    codeSpan.style.color = "var(--text)";
+                    codeSpan.style.fontWeight = "normal";
+                    codeSpan.textContent = content;
+
+                    lineDiv.appendChild(promptSpan);
+                    lineDiv.appendChild(codeSpan);
+                } else if (type === "output") {
+                    lineDiv.style.color = "var(--text)";
+                    lineDiv.style.paddingLeft = "0";
+                    
+                    const prefixSpan = document.createElement("span");
+                    prefixSpan.style.color = "var(--accent)";
+                    prefixSpan.style.fontWeight = "600";
+                    prefixSpan.style.marginRight = "8px";
+                    prefixSpan.style.userSelect = "none";
+                    prefixSpan.textContent = "›";
+                    
+                    const textSpan = document.createElement("span");
+                    textSpan.textContent = content;
+                    
+                    lineDiv.appendChild(prefixSpan);
+                    lineDiv.appendChild(textSpan);
+                } else if (type === "result") {
+                    lineDiv.style.color = "#4c705a";
+                    lineDiv.style.paddingLeft = "0";
+                    lineDiv.style.fontWeight = "600";
+                    lineDiv.textContent = content;
+                } else if (type === "error") {
+                    lineDiv.style.color = "var(--red)";
+                    lineDiv.style.paddingLeft = "0";
+                    lineDiv.textContent = content;
+                } else if (type === "info") {
+                    lineDiv.style.color = "var(--text3)";
+                    lineDiv.style.fontSize = "11.5px";
+                    lineDiv.style.fontStyle = "italic";
+                    lineDiv.textContent = content;
+                }
+
+                replHistory.appendChild(lineDiv);
+                if (replTerminalBody) {
+                    replTerminalBody.scrollTop = replTerminalBody.scrollHeight;
+                }
+                saveReplState();
+            }
+
+            if (replTerminalBody && replInput) {
+                replTerminalBody.addEventListener("click", function () {
+                    replInput.focus();
+                });
+            }
+
+            if (replInput) {
+                replInput.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        const code = replInput.value;
+                        if (!code.trim()) return;
+
+                        commandHistory.push(code);
+                        historyIndex = -1;
+
+                        replInput.value = "";
+                        appendToHistory("input", code);
+                        replInput.disabled = true;
+
+                        fetch("/api/repl", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                session_id: replSessionId,
+                                code: code
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            replInput.disabled = false;
+                            replInput.focus();
+
+                            if (data.session_id) {
+                                replSessionId = data.session_id;
+                                localStorage.setItem("mathlite_repl_session_id", replSessionId);
+                            }
+
+                            if (data.output && data.output.length > 0) {
+                                data.output.forEach(line => {
+                                    appendToHistory("output", line);
+                                });
+                            }
+
+                            if (data.result !== null && data.result !== undefined) {
+                                appendToHistory("result", data.result);
+                            }
+
+                            if (data.errors && data.errors.length > 0) {
+                                data.errors.forEach(err => {
+                                    appendToHistory("error", err);
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            replInput.disabled = false;
+                            replInput.focus();
+                            appendToHistory("error", "Error de conexión con el servidor: " + err);
+                        });
+                    } else if (e.key === "ArrowUp") {
+                        if (commandHistory.length > 0) {
+                            if (historyIndex === -1) {
+                                tempInput = replInput.value;
+                            }
+                            if (historyIndex < commandHistory.length - 1) {
+                                historyIndex++;
+                                replInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                            }
+                            e.preventDefault();
+                        }
+                    } else if (e.key === "ArrowDown") {
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                            replInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                            e.preventDefault();
+                        } else if (historyIndex === 0) {
+                            historyIndex = -1;
+                            replInput.value = tempInput;
+                            e.preventDefault();
+                        }
+                    }
+                });
+            }
+
+            if (btnClearRepl) {
+                btnClearRepl.addEventListener("click", function () {
+                    replHistory.innerHTML = '';
+                    commandHistory = [];
+                    localStorage.removeItem("mathlite_repl_history_html");
+                    localStorage.removeItem("mathlite_repl_command_history");
+                    if (replTerminalBody) {
+                        replTerminalBody.scrollTop = 0;
+                    }
+                });
+            }
+
+            if (btnResetRepl) {
+                btnResetRepl.addEventListener("click", function () {
+                    fetch("/api/repl/reset", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            session_id: replSessionId
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.session_id) {
+                            replSessionId = data.session_id;
+                            localStorage.setItem("mathlite_repl_session_id", replSessionId);
+                        }
+                        replHistory.innerHTML = '';
+                        commandHistory = [];
+                        localStorage.removeItem("mathlite_repl_history_html");
+                        localStorage.removeItem("mathlite_repl_command_history");
+                        appendToHistory("info", "--- Entorno de ejecución reiniciado con éxito (todas las variables y funciones han sido limpiadas) ---");
+                    })
+                    .catch(err => {
+                        appendToHistory("error", "Error al reiniciar el entorno: " + err);
+                    });
+                });
+            }
+
+            document.querySelectorAll(".result-tab").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    if (button.dataset.tab === "repl") {
+                        setTimeout(() => { if (replInput) replInput.focus(); }, 100);
+                    }
+                });
+            });
         });
     </script>
     <!-- Modal Agregar Caso de Prueba -->

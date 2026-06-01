@@ -22,6 +22,13 @@ class ReturnSignal(Exception):
         self.value = value
 
 
+class MathLiteRuntimeError(Exception):
+    def __init__(self, node, message):
+        super().__init__(message)
+        self.node = node
+        self.message = message
+
+
 class Environment:
     def __init__(self, parent=None, is_function_scope=False):
         self.values = {}
@@ -107,6 +114,8 @@ class Interpreter:
             self.errors.append(
                 RuntimeErrorInfo("La instrucción return no puede ejecutarse fuera de una función.")
             )
+        except MathLiteRuntimeError as error:
+            self.errors.append(RuntimeErrorInfo(error.message, line=error.node.line if error.node else 0))
         except Exception as error:
             self.errors.append(RuntimeErrorInfo(str(error)))
 
@@ -120,7 +129,8 @@ class Interpreter:
         method = getattr(self, method_name, None)
 
         if method is None:
-            raise RuntimeError(
+            raise MathLiteRuntimeError(
+                node,
                 "No existe método de interpretación para el nodo '{}'.".format(
                     type(node).__name__
                 )
@@ -220,7 +230,10 @@ class Interpreter:
         return node.value
 
     def visit_VariableNode(self, node):
-        return self.current_env.get(node.name)
+        try:
+            return self.current_env.get(node.name)
+        except RuntimeError as error:
+            raise MathLiteRuntimeError(node, str(error))
 
     # =========================
     # EXPRESIONES
@@ -230,13 +243,13 @@ class Interpreter:
         value = self.visit(node.operand)
 
         if node.operator == "-":
-            self.validate_number(value, "El operador '-' requiere un valor numérico.")
+            self.validate_number(node, value, "El operador '-' requiere un valor numérico.")
             return -value
 
         if node.operator == "not":
             return not self.is_truthy(value)
 
-        raise RuntimeError("Operador unario no soportado '{}'.".format(node.operator))
+        raise MathLiteRuntimeError(node, "Operador unario no soportado '{}'.".format(node.operator))
 
     def visit_BinOpNode(self, node):
         if node.operator == "and":
@@ -261,34 +274,34 @@ class Interpreter:
         right = self.visit(node.right)
 
         if node.operator == "+":
-            return self.evaluate_plus(left, right)
+            return self.evaluate_plus(node, left, right)
 
         if node.operator == "-":
-            self.validate_numbers(left, right, "El operador '-' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '-' requiere valores numéricos.")
             return left - right
 
         if node.operator == "*":
-            self.validate_numbers(left, right, "El operador '*' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '*' requiere valores numéricos.")
             return left * right
 
         if node.operator == "/":
-            self.validate_numbers(left, right, "El operador '/' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '/' requiere valores numéricos.")
 
             if right == 0:
-                raise RuntimeError("División por cero.")
+                raise MathLiteRuntimeError(node, "División por cero.")
 
             return left / right
 
         if node.operator == "%":
-            self.validate_numbers(left, right, "El operador '%' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '%' requiere valores numéricos.")
 
             if right == 0:
-                raise RuntimeError("Módulo por cero.")
+                raise MathLiteRuntimeError(node, "Módulo por cero.")
 
             return left % right
 
         if node.operator == "^":
-            self.validate_numbers(left, right, "El operador '^' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '^' requiere valores numéricos.")
             return left ** right
 
         if node.operator == "==":
@@ -298,22 +311,22 @@ class Interpreter:
             return left != right
 
         if node.operator == "<":
-            self.validate_numbers(left, right, "El operador '<' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '<' requiere valores numéricos.")
             return left < right
 
         if node.operator == ">":
-            self.validate_numbers(left, right, "El operador '>' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '>' requiere valores numéricos.")
             return left > right
 
         if node.operator == "<=":
-            self.validate_numbers(left, right, "El operador '<=' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '<=' requiere valores numéricos.")
             return left <= right
 
         if node.operator == ">=":
-            self.validate_numbers(left, right, "El operador '>=' requiere valores numéricos.")
+            self.validate_numbers(node, left, right, "El operador '>=' requiere valores numéricos.")
             return left >= right
 
-        raise RuntimeError("Operador binario no soportado '{}'.".format(node.operator))
+        raise MathLiteRuntimeError(node, "Operador binario no soportado '{}'.".format(node.operator))
 
     def visit_FuncCallNode(self, node):
         arguments = []
@@ -322,15 +335,16 @@ class Interpreter:
             arguments.append(self.visit(arg))
 
         if node.name in self.builtin_functions:
-            return self.call_builtin_function(node.name, arguments)
+            return self.call_builtin_function(node, node.name, arguments)
 
         if node.name not in self.functions:
-            raise RuntimeError("Función '{}' no encontrada.".format(node.name))
+            raise MathLiteRuntimeError(node, "Función '{}' no encontrada.".format(node.name))
 
         function_node = self.functions[node.name]
 
         if len(arguments) != len(function_node.params):
-            raise RuntimeError(
+            raise MathLiteRuntimeError(
+                node,
                 "La función '{}' esperaba {} argumentos, pero recibió {}.".format(
                     node.name,
                     len(function_node.params),
@@ -361,23 +375,26 @@ class Interpreter:
     # FUNCIONES INTEGRADAS
     # =========================
 
-    def call_builtin_function(self, name, arguments):
+    def call_builtin_function(self, node, name, arguments):
         if len(arguments) != 1:
-            raise RuntimeError(
+            raise MathLiteRuntimeError(
+                node,
                 "La función integrada '{}' espera 1 argumento.".format(name)
             )
 
         value = arguments[0]
 
         if not self.is_number(value):
-            raise RuntimeError(
+            raise MathLiteRuntimeError(
+                node,
                 "La función integrada '{}' requiere un argumento numérico.".format(name)
             )
 
         try:
             return self.builtin_functions[name](value)
         except ValueError:
-            raise RuntimeError(
+            raise MathLiteRuntimeError(
+                node,
                 "Argumento inválido para la función integrada '{}'.".format(name)
             )
 
@@ -388,22 +405,22 @@ class Interpreter:
     def is_number(self, value):
         return isinstance(value, int) or isinstance(value, float)
 
-    def validate_number(self, value, message):
+    def validate_number(self, node, value, message):
         if not self.is_number(value):
-            raise RuntimeError(message)
+            raise MathLiteRuntimeError(node, message)
 
-    def validate_numbers(self, left, right, message):
+    def validate_numbers(self, node, left, right, message):
         if not self.is_number(left) or not self.is_number(right):
-            raise RuntimeError(message)
+            raise MathLiteRuntimeError(node, message)
 
-    def evaluate_plus(self, left, right):
+    def evaluate_plus(self, node, left, right):
         if self.is_number(left) and self.is_number(right):
             return left + right
 
         if isinstance(left, str) and isinstance(right, str):
             return left + right
 
-        raise RuntimeError("El operador '+' solo permite número + número o cadena + cadena.")
+        raise MathLiteRuntimeError(node, "El operador '+' solo permite número + número o cadena + cadena.")
 
     def is_truthy(self, value):
         if value is None:
