@@ -216,166 +216,232 @@ class TestCaseRepository:
             return
 
         default_cases = [
-            # 6.1 Programas Válidos
-            {
-                "name": "Precedencia Mixta",
-                "category": "Programas Válidos",
-                "code": "print((3 + 4 * 2) / (1 - 5)^2)",
-                "is_default": True
-            },
-            {
-                "name": "Factorial Recursivo",
-                "category": "Programas Válidos",
-                "code": "def factorial(n) {\n    if n <= 1 {\n        return 1\n    }\n    return n * factorial(n - 1)\n}\nprint(factorial(5))",
-                "is_default": True
-            },
-            {
-                "name": "Ciclo Acumulador (1 a n)",
-                "category": "Programas Válidos",
-                "code": "let n = 10\nlet suma = 0\nlet i = 1\nwhile i <= n {\n    let suma = suma + i\n    let i = i + 1\n}\nprint(suma)",
-                "is_default": True
-            },
-            {
-                "name": "Funciones Trigonométricas y Matemáticas",
-                "category": "Programas Válidos",
-                "code": "let x = sin(0.5) * cos(0.5) + sqrt(16)\nprint(x)",
-                "is_default": True
-            },
-            {
-                "name": "Llamadas entre funciones",
-                "category": "Programas Válidos",
-                "code": "def duplicar(x) {\n    return x * 2\n}\ndef procesar(n) {\n    return duplicar(n) + 10\n}\nprint(procesar(5))",
-                "is_default": True
-            },
+        # ======================================================
+        # PROGRAMAS VÁLIDOS
+        # ======================================================
+        {
+            "id": "valid-1",
+            "name": "Programa válido básico",
+            "category": "Programas Válidos",
+            "code": """let x = 5
+    let y = 2
+    let z = x + y * 3
+    print(z)"""
+        },
+        {
+            "id": "valid-2",
+            "name": "Actualización con let",
+            "category": "Programas Válidos",
+            "code": """let x = 10
+    let x = 20
+    print(x)"""
+        },
+        {
+            "id": "valid-3",
+            "name": "If no crea alcance independiente",
+            "category": "Programas Válidos",
+            "code": """if true {
+        let y = 20
+    }
 
-            # 6.2 Errores Léxicos
-            {
-                "name": "Carácter inválido (@ y #)",
-                "category": "Errores Léxicos",
-                "code": "let x = 10 @ 5\nlet y = # 100\nprint(x + y)",
-                "is_default": True
-            },
-            {
-                "name": "Cadena sin comilla de cierre",
-                "category": "Errores Léxicos",
-                "code": "let str = \"cadena sin terminar\nprint(str)",
-                "is_default": True
-            },
-            {
-                "name": "Operadores inválidos en flujo complejo ($ y ?)",
-                "category": "Errores Léxicos",
-                "code": "let x = 10\nwhile x > 0 {\n    let y = x $ 2\n    if y == 0 {\n        print(\"Par?\")\n    }\n    let x = x - 1\n}",
-                "is_default": True
-            },
-            {
-                "name": "Caracteres exóticos y escape inválido (§ y ¶)",
-                "category": "Errores Léxicos",
-                "code": "let a = \"línea 1 \\x y aquí hay un carácter extraño: § y otro: ¶\"\nprint(a)",
-                "is_default": True
-            },
-            {
-                "name": "Múltiples puntos decimales y operador bitwise",
-                "category": "Errores Léxicos",
-                "code": "let num = 12.34.56\nlet flag = true & false\nprint(num)",
-                "is_default": True
-            },
+    print(y)"""
+        },
+        {
+            "id": "valid-4",
+            "name": "Función no modifica variable global",
+            "category": "Programas Válidos",
+            "code": """let x = 10
 
-            # 6.3 Errores Sintácticos
-            {
-                "name": "Paréntesis sin cerrar",
-                "category": "Errores Sintácticos",
-                "code": "let x = (3 + 4 * 2\nprint(x)",
-                "is_default": True
-            },
-            {
-                "name": "Función sin llaves de bloque",
-                "category": "Errores Sintácticos",
-                "code": "def suma(a, b)\n    return a + b\nprint(suma(5, 3))",
-                "is_default": True
-            },
-            {
-                "name": "Sentencia if sin condición",
-                "category": "Errores Sintácticos",
-                "code": "if {\n    print(\"hola\")\n}",
-                "is_default": True
-            },
-            {
-                "name": "Ciclo while sin llaves de bloque",
-                "category": "Errores Sintácticos",
-                "code": "let i = 0\nwhile i < 5\n    let i = i + 1",
-                "is_default": True
-            },
-            {
-                "name": "Llamada con argumentos mal delimitados",
-                "category": "Errores Sintácticos",
-                "code": "def calcular(a, b) {\n    return a + b\n}\nprint(calcular(10,, 20))",
-                "is_default": True
-            },
+    def prueba() {
+        let x = 5
+        return x
+    }
 
-            # 6.4 Errores Semánticos
-            {
-                "name": "Variable no declarada",
-                "category": "Errores Semánticos",
-                "code": "print(x)",
-                "is_default": True
-            },
-            {
-                "name": "Aridad incorrecta de argumentos",
-                "category": "Errores Semánticos",
-                "code": "def suma(a, b) {\n    return a + b\n}\nprint(suma(5))",
-                "is_default": True
-            },
-            {
-                "name": "Tipos incompatibles (+)",
-                "category": "Errores Semánticos",
-                "code": "let res = \"hola\" + 5\nprint(res)",
-                "is_default": True
-            },
-            {
-                "name": "Return fuera de función",
-                "category": "Errores Semánticos",
-                "code": "let valor = 10\nreturn valor",
-                "is_default": True
-            },
-            {
-                "name": "Redeclaración de variable",
-                "category": "Errores Semánticos",
-                "code": "let x = 10\nlet x = 20\nprint(x)",
-                "is_default": True
-            },
+    print(prueba())
+    print(x)"""
+        },
+        {
+            "id": "valid-5",
+            "name": "Recursividad no modifica global",
+            "category": "Programas Válidos",
+            "code": """let n = 100
 
-            # 6.5 Errores en Tiempo de Ejecución
-            {
-                "name": "División por cero",
-                "category": "Errores en Tiempo de Ejecución",
-                "code": "let r = 10 / 0",
-                "is_default": True
-            },
-            {
-                "name": "Llamada a función no definida",
-                "category": "Errores en Tiempo de Ejecución",
-                "code": "print(funcion_inexistente(10))",
-                "is_default": True
-            },
-            {
-                "name": "Bucle infinito",
-                "category": "Errores en Tiempo de Ejecución",
-                "code": "let i = 0\nwhile true {\n    let i = i + 1\n}",
-                "is_default": True
-            },
-            {
-                "name": "Módulo por cero",
-                "category": "Errores en Tiempo de Ejecución",
-                "code": "let a = 10 % 0\nprint(a)",
-                "is_default": True
-            },
-            {
-                "name": "Argumento inválido en función integrada",
-                "category": "Errores en Tiempo de Ejecución",
-                "code": "def calcular(val) {\n    return sin(val)\n}\nprint(calcular(\"hola\"))",
-                "is_default": True
-            }
-        ]
+    def factorial(n) {
+        if n <= 1 {
+            return 1
+        }
+
+        return n * factorial(n - 1)
+    }
+
+    print(factorial(5))
+    print(n)"""
+        },
+
+        # ======================================================
+        # ERRORES LÉXICOS
+        # ======================================================
+        {
+            "id": "lex-1",
+            "name": "Símbolo inválido",
+            "category": "Errores Léxicos",
+            "code": """let x = 5 @ 2
+    print(x)"""
+        },
+        {
+            "id": "lex-2",
+            "name": "Cadena sin cerrar",
+            "category": "Errores Léxicos",
+            "code": """print("hola)"""
+        },
+        {
+            "id": "lex-3",
+            "name": "Símbolo numeral no permitido",
+            "category": "Errores Léxicos",
+            "code": """let y = 10 # 3"""
+        },
+        {
+            "id": "lex-4",
+            "name": "Carácter dólar no reconocido",
+            "category": "Errores Léxicos",
+            "code": """let total = 50 $ 2"""
+        },
+        {
+            "id": "lex-5",
+            "name": "Carácter arroba en identificador",
+            "category": "Errores Léxicos",
+            "code": """let nombre@ = 10"""
+        },
+
+        # ======================================================
+        # ERRORES SINTÁCTICOS
+        # Casos exclusivos de sintaxis.
+        # No incluyen errores semánticos posteriores.
+        # ======================================================
+        {
+            "id": "syntax-1",
+            "name": "Paréntesis sin cerrar en print",
+            "category": "Errores Sintácticos",
+            "code": """print(2 + 3"""
+        },
+        {
+            "id": "syntax-2",
+            "name": "Función sin bloque",
+            "category": "Errores Sintácticos",
+            "code": """def suma(a, b)
+        return a + b"""
+        },
+        {
+            "id": "syntax-3",
+            "name": "If sin bloque",
+            "category": "Errores Sintácticos",
+            "code": """if true
+        print(1)"""
+        },
+        {
+            "id": "syntax-4",
+            "name": "While sin bloque",
+            "category": "Errores Sintácticos",
+            "code": """while true
+        print(1)"""
+        },
+        {
+            "id": "syntax-5",
+            "name": "Función integrada sin paréntesis",
+            "category": "Errores Sintácticos",
+            "code": """print(sin)"""
+        },
+
+        # ======================================================
+        # ERRORES SEMÁNTICOS
+        # Sintaxis correcta, pero significado incorrecto.
+        # ======================================================
+        {
+            "id": "semantic-1",
+            "name": "Variable no declarada",
+            "category": "Errores Semánticos",
+            "code": """print(x)"""
+        },
+        {
+            "id": "semantic-2",
+            "name": "Aridad incorrecta",
+            "category": "Errores Semánticos",
+            "code": """def suma(a, b) {
+        return a + b
+    }
+
+    print(suma(5))"""
+        },
+        {
+            "id": "semantic-3",
+            "name": "Tipos incompatibles",
+            "category": "Errores Semánticos",
+            "code": """print("hola" + 5)"""
+        },
+        {
+            "id": "semantic-4",
+            "name": "Return fuera de función",
+            "category": "Errores Semánticos",
+            "code": """return 5"""
+        },
+        {
+            "id": "semantic-5",
+            "name": "Variable local no existe fuera de función",
+            "category": "Errores Semánticos",
+            "code": """def prueba() {
+        let secreto = 7
+        return secreto
+    }
+
+    print(prueba())
+    print(secreto)"""
+        },
+
+        # ======================================================
+        # ERRORES EN TIEMPO DE EJECUCIÓN
+        # Léxico, sintaxis y semántica correctos.
+        # Fallan durante la interpretación.
+        # ======================================================
+        {
+            "id": "runtime-1",
+            "name": "División por cero",
+            "category": "Errores en Tiempo de Ejecución",
+            "code": """let x = 10 / 0
+    print(x)"""
+        },
+        {
+            "id": "runtime-2",
+            "name": "Módulo por cero",
+            "category": "Errores en Tiempo de Ejecución",
+            "code": """let x = 10 % 0
+    print(x)"""
+        },
+        {
+            "id": "runtime-3",
+            "name": "Raíz cuadrada de número negativo",
+            "category": "Errores en Tiempo de Ejecución",
+            "code": """print(sqrt(-1))"""
+        },
+        {
+            "id": "runtime-4",
+            "name": "Logaritmo de cero",
+            "category": "Errores en Tiempo de Ejecución",
+            "code": """print(log(0))"""
+        },
+        {
+            "id": "runtime-5",
+            "name": "Límite de iteraciones",
+            "category": "Errores en Tiempo de Ejecución",
+            "code": """let x = 1
+
+    while x > 0 {
+        let x = x + 1
+    }
+
+    print(x)"""
+        }
+    ]
+
 
         base_time = datetime.now()
         batch = self.db.batch()
