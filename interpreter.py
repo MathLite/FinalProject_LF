@@ -30,20 +30,41 @@ class MathLiteRuntimeError(Exception):
 
 
 class Environment:
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, is_function_scope=False):
         self.values = {}
         self.parent = parent
+        self.is_function_scope = is_function_scope
 
     def define(self, name, value):
         self.values[name] = value
 
-    def assign(self, name, value):
-        if name in self.values:
-            self.values[name] = value
-            return
+    def find_for_assignment(self, name):
+        env = self
 
-        if self.parent is not None:
-            self.parent.assign(name, value)
+        while env is not None:
+            if name in env.values:
+                return env
+
+            if env.is_function_scope:
+                break
+
+            env = env.parent
+
+        return None
+
+    def define_or_assign(self, name, value):
+        target_env = self.find_for_assignment(name)
+
+        if target_env is not None:
+            target_env.values[name] = value
+        else:
+            self.define(name, value)
+
+    def assign(self, name, value):
+        target_env = self.find_for_assignment(name)
+
+        if target_env is not None:
+            target_env.values[name] = value
             return
 
         raise RuntimeError("La variable '{}' no está definida.".format(name))
@@ -56,8 +77,7 @@ class Environment:
             return self.parent.get(name)
 
         raise RuntimeError("La variable '{}' no está definida.".format(name))
-
-
+    
 class Interpreter:
     def __init__(self):
         self.global_env = Environment()
@@ -78,9 +98,15 @@ class Interpreter:
             "ceil": math.ceil,
         }
 
-    def interpret(self, ast):
+    def reset_runtime_state(self):
+        self.global_env = Environment()
+        self.current_env = self.global_env
+        self.functions = {}
         self.output = []
         self.errors = []
+
+    def interpret(self, ast):
+        self.reset_runtime_state()
 
         try:
             self.visit(ast)
@@ -130,9 +156,14 @@ class Interpreter:
 
     def visit_VarDeclNode(self, node):
         value = self.visit(node.value)
-        self.current_env.define(node.name, value)
+        self.current_env.define_or_assign(node.name, value)
         return value
-    
+
+    def visit_AssignNode(self, node):
+        value = self.visit(node.value)
+        self.current_env.assign(node.name, value)
+        return value
+
     def visit_PrintNode(self, node):
         value = self.visit(node.expression)
         self.output.append(self.format_value(value))
@@ -149,56 +180,30 @@ class Interpreter:
         condition = self.visit(node.condition)
 
         if self.is_truthy(condition):
-            previous_env = self.current_env
-            block_env = Environment(parent=previous_env)
-
-            self.current_env = block_env
-
-            try:
-                for statement in node.then_block.statements:
-                    self.visit(statement)
-            finally:
-                self.current_env = previous_env
-
+            for statement in node.then_block.statements:
+                self.visit(statement)
             return None
 
         if node.else_block is not None:
-            previous_env = self.current_env
-            block_env = Environment(parent=previous_env)
-
-            self.current_env = block_env
-
-            try:
-                for statement in node.else_block.statements:
-                    self.visit(statement)
-            finally:
-                self.current_env = previous_env
+            for statement in node.else_block.statements:
+                self.visit(statement)
 
         return None
-
+    
     def visit_WhileNode(self, node):
         iterations = 0
 
-        previous_env = self.current_env
-        while_env = Environment(parent=previous_env)
+        while self.is_truthy(self.visit(node.condition)):
+            if iterations >= self.max_loop_iterations:
+                raise RuntimeError("Se superó el límite de iteraciones. Posible ciclo infinito.")
 
-        self.current_env = while_env
+            for statement in node.body.statements:
+                self.visit(statement)
 
-        try:
-            while self.is_truthy(self.visit(node.condition)):
-                if iterations >= self.max_loop_iterations:
-                    raise RuntimeError("Se superó el límite de iteraciones. Posible ciclo infinito.")
-
-                for statement in node.body.statements:
-                    self.visit(statement)
-
-                iterations += 1
-
-        finally:
-            self.current_env = previous_env
+            iterations += 1
 
         return None
-
+    
     def visit_FuncDefNode(self, node):
         self.functions[node.name] = node
         return None
@@ -348,8 +353,8 @@ class Interpreter:
             )
 
         previous_env = self.current_env
-        local_env = Environment(parent=self.global_env)
-
+        local_env = Environment(parent=self.global_env, is_function_scope=True)
+       
         for index in range(len(function_node.params)):
             param_name = function_node.params[index]
             local_env.define(param_name, arguments[index])
@@ -361,8 +366,9 @@ class Interpreter:
         except ReturnSignal as return_signal:
             self.current_env = previous_env
             return return_signal.value
+        finally:
+            self.current_env = previous_env
 
-        self.current_env = previous_env
         return None
 
     # =========================

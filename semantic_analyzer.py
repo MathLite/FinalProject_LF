@@ -1,13 +1,16 @@
 class SymbolTable:
     def __init__(self):
         self.scopes = [{}]
+        self.scope_types = ["global"]
 
-    def enter_scope(self):
+    def enter_scope(self, scope_type="block"):
         self.scopes.append({})
+        self.scope_types.append(scope_type)
 
     def exit_scope(self):
         if len(self.scopes) > 1:
             self.scopes.pop()
+            self.scope_types.pop()
 
     def define(self, name, symbol_info):
         self.scopes[-1][name] = symbol_info
@@ -16,6 +19,19 @@ class SymbolTable:
         for scope in reversed(self.scopes):
             if name in scope:
                 return scope[name]
+
+        return None
+
+    def lookup_for_assignment(self, name):
+        for index in range(len(self.scopes) - 1, -1, -1):
+            scope = self.scopes[index]
+
+            if name in scope:
+                return scope[name]
+
+            if self.scope_types[index] == "function":
+                break
+
         return None
 
     def current_scope_contains(self, name):
@@ -23,7 +39,7 @@ class SymbolTable:
 
     def is_global_scope(self):
         return len(self.scopes) == 1
-
+    
 
 class SemanticError(Exception):
     pass
@@ -96,12 +112,8 @@ class SemanticAnalyzer:
             self.visit(stmt)
 
     def visit_BlockNode(self, node):
-        self.symbol_table.enter_scope()
-
         for stmt in node.statements:
             self.visit(stmt)
-
-        self.symbol_table.exit_scope()
 
     # =========================
     # DECLARACIONES
@@ -110,17 +122,26 @@ class SemanticAnalyzer:
     def visit_VarDeclNode(self, node):
         value_type = self.visit(node.value)
 
-        if self.symbol_table.current_scope_contains(node.name):
-            self.report_error(
-                "REDECLARED_VAR",
-                "La variable '{}' ya fue declarada en este bloque.".format(node.name),
-                node.line
-            )
-        else:
-            self.symbol_table.define(node.name, {
-                "type": value_type,
-                "kind": "VAR"
-            })
+        target_symbol = self.symbol_table.lookup_for_assignment(node.name)
+
+        if target_symbol is not None:
+            if target_symbol.get("type") == "FUNC":
+                self.report_error(
+                    "INVALID_REDECLARATION",
+                    "El nombre '{}' corresponde a una función y no puede usarse como variable.".format(node.name),
+                    node.line
+                )
+                node.eval_type = "ERROR"
+                return "ERROR"
+
+            target_symbol["type"] = value_type
+            node.eval_type = value_type
+            return value_type
+
+        self.symbol_table.define(node.name, {
+            "type": value_type,
+            "kind": "VAR"
+        })
 
         node.eval_type = value_type
         return value_type
@@ -143,7 +164,7 @@ class SemanticAnalyzer:
         previous_in_function = self.in_function
         self.in_function = True
 
-        self.symbol_table.enter_scope()
+        self.symbol_table.enter_scope("function")
 
         for param_name in node.params:
             if self.symbol_table.current_scope_contains(param_name):
@@ -338,6 +359,16 @@ class SemanticAnalyzer:
     # =========================
     # OPERACIONES
     # =========================
+    def is_numeric_type(self, value_type):
+        return value_type in ["INT", "REAL"]
+
+
+    def is_numeric_or_any(self, value_type):
+        return value_type in ["INT", "REAL", "ANY"]
+
+
+    def is_bool_or_any(self, value_type):
+        return value_type in ["BOOL", "ANY"]
 
     def visit_BinOpNode(self, node):
         left_type = self.visit(node.left)
@@ -348,11 +379,12 @@ class SemanticAnalyzer:
             return "ERROR"
 
         arithmetic_ops = ["+", "-", "*", "/", "%", "^"]
-        relational_ops = [">", "<", ">=", "<=", "==", "!="]
+        relational_numeric_ops = [">", "<", ">=", "<="]
+        equality_ops = ["==", "!="]
         logical_ops = ["and", "or"]
 
         if node.operator in arithmetic_ops:
-            if left_type in ["STRING", "BOOL"] or right_type in ["STRING", "BOOL"]:
+            if not self.is_numeric_or_any(left_type) or not self.is_numeric_or_any(right_type):
                 self.report_error(
                     "TYPE_MISMATCH",
                     "Operación aritmética '{}' inválida entre tipos {} y {}.".format(
@@ -365,6 +397,10 @@ class SemanticAnalyzer:
                 node.eval_type = "ERROR"
                 return "ERROR"
 
+            if left_type == "ANY" or right_type == "ANY":
+                node.eval_type = "ANY"
+                return "ANY"
+
             if left_type == "REAL" or right_type == "REAL":
                 node.eval_type = "REAL"
             else:
@@ -372,22 +408,25 @@ class SemanticAnalyzer:
 
             return node.eval_type
 
-        if node.operator in relational_ops:
-            if node.operator in [">", "<", ">=", "<="]:
-                if left_type not in ["INT", "REAL"] or right_type not in ["INT", "REAL"]:
-                    self.report_error(
-                        "TYPE_MISMATCH",
-                        "El operador '{}' requiere operandos numéricos.".format(node.operator),
-                        node.line
-                    )
-                    node.eval_type = "ERROR"
-                    return "ERROR"
+        if node.operator in relational_numeric_ops:
+            if not self.is_numeric_or_any(left_type) or not self.is_numeric_or_any(right_type):
+                self.report_error(
+                    "TYPE_MISMATCH",
+                    "El operador '{}' requiere operandos numéricos.".format(node.operator),
+                    node.line
+                )
+                node.eval_type = "ERROR"
+                return "ERROR"
 
             node.eval_type = "BOOL"
             return "BOOL"
 
+        if node.operator in equality_ops:
+            node.eval_type = "BOOL"
+            return "BOOL"
+
         if node.operator in logical_ops:
-            if left_type != "BOOL" or right_type != "BOOL":
+            if not self.is_bool_or_any(left_type) or not self.is_bool_or_any(right_type):
                 self.report_error(
                     "TYPE_MISMATCH",
                     "El operador lógico '{}' requiere operandos booleanos.".format(node.operator),

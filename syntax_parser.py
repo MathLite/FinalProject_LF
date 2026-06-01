@@ -311,11 +311,24 @@ class Parser:
 
     def parse_print_stmt(self):
         line = self.current().line
-        self.consume("PRINT", "Se esperaba 'print'")
-        self.consume("LPAREN", "Se esperaba '('")
-        expr = self.parse_expression()
-        self.consume("RPAREN", "Se esperaba ')'")
-        return PrintNode(expr, line=line)
+
+        print_token = self.consume("PRINT", "Se esperaba 'print'")
+        if print_token is None:
+            return None
+
+        lparen_token = self.consume("LPAREN", "Se esperaba '(' después de 'print'")
+        if lparen_token is None:
+            return None
+
+        expression = self.parse_expression()
+        if expression is None:
+            return None
+
+        rparen_token = self.consume("RPAREN", "Se esperaba ')'")
+        if rparen_token is None:
+            return None
+
+        return PrintNode(expression, line=line)
 
     def parse_return_stmt(self):
         line = self.current().line
