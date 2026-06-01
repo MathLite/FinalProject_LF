@@ -59,7 +59,7 @@ def run_repl():
                     # Si el último nodo es una expresión, ejecutamos todo lo anterior normalmente
                     other_statements = statements[:-1]
                     if other_statements:
-                        output, runtime_errors = interpreter.interpret(ProgramNode(other_statements, line=ast.line))
+                        output, runtime_errors = interpreter.interpret(ProgramNode(other_statements, line=ast.line), reset_state=False)
                         for out in output:
                             print(out)
                         if runtime_errors:
@@ -80,7 +80,7 @@ def run_repl():
                         print("Error en tiempo de ejecución: {}".format(err))
                 else:
                     # Si no es una expresión (por ejemplo, let, def, if, while, print)
-                    output, runtime_errors = interpreter.interpret(ast)
+                    output, runtime_errors = interpreter.interpret(ast, reset_state=False)
                     for out in output:
                         print(out)
                     if runtime_errors:
@@ -88,7 +88,7 @@ def run_repl():
                             print(err)
             else:
                 # Caso por defecto
-                output, runtime_errors = interpreter.interpret(ast)
+                output, runtime_errors = interpreter.interpret(ast, reset_state=False)
                 for out in output:
                     print(out)
                 if runtime_errors:

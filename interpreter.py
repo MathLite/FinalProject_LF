@@ -105,8 +105,12 @@ class Interpreter:
         self.output = []
         self.errors = []
 
-    def interpret(self, ast):
-        self.reset_runtime_state()
+    def interpret(self, ast, reset_state=True):
+        if reset_state:
+            self.reset_runtime_state()
+        else:
+            self.output = []
+            self.errors = []
 
         try:
             self.visit(ast)

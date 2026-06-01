@@ -234,7 +234,7 @@ def repl_evaluate():
         if isinstance(last_stmt, ExprStmtNode):
             other_statements = statements[:-1]
             if other_statements:
-                output, runtime_errors = interpreter.interpret(ProgramNode(other_statements, line=ast.line))
+                output, runtime_errors = interpreter.interpret(ProgramNode(other_statements, line=ast.line), reset_state=False)
                 if runtime_errors:
                     errors = [str(err) for err in runtime_errors]
                     return jsonify({
@@ -255,7 +255,7 @@ def repl_evaluate():
             except Exception as err:
                 errors.append("Error en tiempo de ejecución: {}".format(err))
         else:
-            output, runtime_errors = interpreter.interpret(ast)
+            output, runtime_errors = interpreter.interpret(ast, reset_state=False)
             if runtime_errors:
                 errors = [str(err) for err in runtime_errors]
 
